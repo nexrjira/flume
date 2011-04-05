@@ -129,15 +129,43 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 		}
 
 	}
+	
+	@Override
+	public String getOffset(String fileName) {
+		// TODO Auto-generated method stub
+		FileReader fileReader;
+		BufferedReader reader;
+		String result = null;
+		File ckpointFile = new File("D:/data.txt");
+		try {
+			if (!ckpointFile.exists()) {
+				return null;
+			}else{
+				fileReader = new FileReader(ckpointFile);
+				reader = new BufferedReader(fileReader);
+				String line = null;
+				while ((line = reader.readLine()) != null) {
+					if (line.startsWith(fileName)) {
+						result = line.substring(line.lastIndexOf(" " ), line.length());
+					}
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return result;
+	}
 
 	public static void main(String args[]) {
 		CheckPointAgentManager cpam = new CheckPointAgentManagerImpl();
 
-		cpam.addPandingQ("teaast3.log", "11111", 10);
-		cpam.addPandingQ("teaast3.log", "11112", 20);
-		cpam.addPandingQ("teaast2.log", "11113", 90);
-		cpam.updateCheckPointFile("teaast2.log", "11113");
+		System.out.println(cpam.getOffset("teaast8.log"));
+//		cpam.addPandingQ("teaast3.log", "11112", 20);
+//		cpam.addPandingQ("teaast2.log", "11113", 90);
+//		cpam.updateCheckPointFile("teaast2.log", "11113");
 
 	}
+
+	
 
 }
