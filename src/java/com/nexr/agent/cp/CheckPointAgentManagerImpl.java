@@ -11,8 +11,20 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 
-public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.cloudera.flume.conf.FlumeConfiguration;
+
+public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
+	static final Logger LOG = LoggerFactory.getLogger(CheckPointAgentManagerImpl.class);
+	
+	private final String SEPERATOR = "\t";
+	private final String LINE_SEPERATOR = "\n";
+	
+	private String checkPointFile = FlumeConfiguration.get().getCheckPointFile();
+	private File ckpointFile = new File(checkPointFile);
+	
 	private final Map<String, Queue<PendingEvent>> pendingQ;
 	private Object sync = new Object();
 
@@ -70,8 +82,6 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 		BufferedWriter bw;
 		StringBuilder contents;
 
-		File ckpointFile = new File("D:/data.txt");
-
 		synchronized (sync) {
 
 			try {
@@ -96,10 +106,10 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 
 					while ((line = reader.readLine()) != null) {
 						if (line.startsWith(fileName)) {
-							contents.append(fileName + " " + pe.getTagId()
-									+ " " + pe.getOffset() + "\n");
+							contents.append(fileName + SEPERATOR + pe.getTagId()
+									+ SEPERATOR + pe.getOffset() + LINE_SEPERATOR);
 						} else {
-							contents.append(line + "\n");
+							contents.append(line + LINE_SEPERATOR);
 						}
 						fw = new FileWriter(ckpointFile);
 						bw = new BufferedWriter(fw);
@@ -112,10 +122,10 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 					reader = new BufferedReader(fileReader);
 
 					while ((line = reader.readLine()) != null) {
-						contents.append(line + "\n");
+						contents.append(line + LINE_SEPERATOR);
 					}
-					contents.append(fileName + " " + pe.getTagId() + " "
-							+ pe.getOffset() + "\n");
+					contents.append(fileName + SEPERATOR + pe.getTagId() + SEPERATOR
+							+ pe.getOffset() + LINE_SEPERATOR);
 					fw = new FileWriter(ckpointFile);
 					bw = new BufferedWriter(fw);
 					bw.write(contents.toString());
@@ -136,7 +146,7 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 		FileReader fileReader;
 		BufferedReader reader;
 		String result = null;
-		File ckpointFile = new File("D:/data.txt");
+		
 		try {
 			if (!ckpointFile.exists()) {
 				return null;
@@ -146,7 +156,7 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 				String line = null;
 				while ((line = reader.readLine()) != null) {
 					if (line.startsWith(fileName)) {
-						result = line.substring(line.lastIndexOf(" " ), line.length());
+						result = line.substring(line.lastIndexOf(SEPERATOR), line.length());
 					}
 				}
 			}
