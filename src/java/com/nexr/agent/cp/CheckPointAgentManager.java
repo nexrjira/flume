@@ -3,7 +3,7 @@ package com.nexr.agent.cp;
 
 public interface CheckPointAgentManager {
 
-	public String getTagId(String filename);
+	public String getTagId(String agentName, String filename);
 	
 	public void addPandingQ(String filename, String tagId, long offset);
 	
