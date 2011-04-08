@@ -23,11 +23,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.junit.Assume;
 import org.junit.Test;
 
+import com.cloudera.flume.agent.DummyCheckPointManager;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeBuilder;
 import com.cloudera.flume.conf.FlumeSpecException;
@@ -85,6 +90,23 @@ public class TestTailDirSource {
     // max-depth 2
     FileUtil.rmr(tmpdir);
   }
+  
+  @Test
+  public void testCheckpointBuilder() throws IOException, FlumeSpecException {
+	  File tmpdir = FileUtil.mktempdir();
+	    String src = "checkpointTailDir(\""
+	        + StringEscapeUtils.escapeJava(tmpdir.getAbsolutePath())
+	        + "\", \"foo.*\"";
+
+	    Context ctx = LogicalNodeContext.testingContext();
+	    FlumeBuilder.buildSource(ctx, src + ")"); // without startFromEnd param
+	    FlumeBuilder.buildSource(ctx, src + ", true)"); // with startFromEnd = true
+	    FlumeBuilder.buildSource(ctx, src + ", false)"); // with startFromEnd =
+	    // false
+	    FlumeBuilder.buildSource(ctx, src + ", true,2)"); // recursively w/
+	    // max-depth 2
+	    FileUtil.rmr(tmpdir);  
+  }
 
   @Test(expected = FlumeSpecException.class)
   public void testFailBuilder() throws IOException, FlumeSpecException {
@@ -107,6 +129,21 @@ public class TestTailDirSource {
       }
       pw.close();
     }
+  }
+  
+  List<String> genFilesWithFixedContent(File tmpdir, String prefix, int files, int lines) throws IOException {
+	  List<String> fileNames = new ArrayList<String>();
+	  for (int i = 0; i < files; i++) {
+	      File tmpfile = File.createTempFile(prefix, "bar", tmpdir);
+	      fileNames.add(tmpfile.getName());
+	      PrintWriter pw = new PrintWriter(tmpfile);
+	      for (int j = 0; j < lines; j++) {
+	        pw.println("0123456789");
+	      }
+	      pw.close();
+	      System.out.println(tmpfile.getName() + " : " + tmpfile.length());
+	    } 
+	  return fileNames;
   }
 
   /**
@@ -134,6 +171,42 @@ public class TestTailDirSource {
     src.close();
     cnt.close();
     FileUtil.rmr(tmpdir);
+  }
+  
+  @Test
+  public void testCheckpointFiles() throws IOException, InterruptedException {
+	  File tmpdir = FileUtil.mktempdir();
+	  TailDirSource src = new TailDirSource(tmpdir, ".*");
+	  DummyCheckPointManager dcpMap = new DummyCheckPointManager();
+	  
+	  List<String> fileNames = genFilesWithFixedContent(tmpdir, "foo", 10, 100);
+	  
+	  Map<String, Long> checkPointMap = new HashMap<String, Long>();
+	  for(String fileName : fileNames) {
+		  System.out.println("add File : " + fileName);
+		  checkPointMap.put(fileName, 550l);
+	  }
+	  dcpMap.setCheckPointMap(checkPointMap);
+	  src.setCheckPointManager(dcpMap);
+	  src.readCheckPoint("dummy");
+	  
+	  AccumulatorSink cnt = new AccumulatorSink("tailcount");
+	  src.open();
+	  cnt.open();
+	  DirectDriver drv = new DirectDriver(src, cnt);
+	  
+	  drv.start();
+	  
+	  Clock.sleep(1000);
+	  
+	  assertEquals(500, cnt.getCount());
+	  
+	  System.out.println("cntCount : " + cnt.getCount());
+	  drv.stop();
+	  src.close();
+	  cnt.close();
+	  FileUtil.rmr(tmpdir);
+	  
   }
 
   /**
