@@ -28,7 +28,4 @@ public class PendingEvent implements Comparable<PendingEvent> {
 		// TODO Auto-generated method stub
 		return 0;
 	}
-	
-	
-
 }

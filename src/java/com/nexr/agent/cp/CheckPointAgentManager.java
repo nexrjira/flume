@@ -7,7 +7,9 @@ public interface CheckPointAgentManager {
 	
 	public void addPandingQ(String filename, String tagId, long offset);
 	
-	public void updateCheckPointFile(String filename, String tagId);
+//	public void updateCheckPointFile(String filename, String tagId);
 	
 	public String getOffset(String filename);
+	
+	public void setCollectorHost(String host);
 }

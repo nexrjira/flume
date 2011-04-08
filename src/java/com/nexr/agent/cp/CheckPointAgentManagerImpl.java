@@ -7,18 +7,29 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TFramedTransport;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.util.Clock;
+import com.nexr.cp.thrift.CheckPointService;
 
 public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 	static final Logger LOG = LoggerFactory
@@ -35,13 +46,48 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 	private final Map<String, Queue<PendingEvent>> pendingQ;
 	private Object sync = new Object();
 
-	public CheckPointAgentManagerImpl() {
+	CheckTagIDThread checkTagIdThread;
+
+	String collectorHost;
+
+	List<String> agentList;
+	
+
+	TSocket socket;
+	TTransport transport;
+	TProtocol protocol;
+	CheckPointService.Client client;
+	int timeout = 10 * 1000;
+
+	public CheckPointAgentManagerImpl(String collectorHost) {
+		this.collectorHost = collectorHost;
+		agentList = new ArrayList<String>();
 		pendingQ = new HashMap<String, Queue<PendingEvent>>();
+
+		socket = new TSocket(collectorHost, 0);
+		socket.setTimeout(timeout);
+		transport = new TFramedTransport(socket);
+		protocol = new TBinaryProtocol(transport);
+		client = new CheckPointService.Client(protocol);
+		try {
+			transport.open();
+		} catch (TTransportException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void setCollectorHost(String host) {
+		this.collectorHost = host;
 	}
 
 	@Override
 	public String getTagId(String agentName, String fileName) {
 		// TODO Auto-generated method stub
+		if(!agentList.contains(agentName)){
+			agentList.add(agentName);
+		}
 		DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
 		long pid = Thread.currentThread().getId();
 		String prefix = agentName + "_" + fileName;
@@ -90,9 +136,10 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 		return pe;
 	}
 
-	@Override
-	public void updateCheckPointFile(String fileName, String tagId) {
+	public void updateCheckPointFile(String tagId) {
 		// TODO Auto-generated method stub
+		String fileName = tagId.substring(tagId.indexOf("_") + 1,
+				tagId.lastIndexOf("_"));
 		PendingEvent pe = getOffset(fileName, tagId);
 
 		FileReader fileReader;
@@ -102,7 +149,6 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 		StringBuilder contents;
 
 		synchronized (sync) {
-
 			try {
 				if (!ckpointFile.exists()) {
 					ckpointFile.createNewFile();
@@ -157,7 +203,6 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 				e.printStackTrace();
 			}
 		}
-
 	}
 
 	@Override
@@ -187,14 +232,77 @@ public class CheckPointAgentManagerImpl implements CheckPointAgentManager {
 		return result;
 	}
 
+	class CheckTagIDThread extends Thread {
+		volatile boolean done = false;
+		long checkTagIdPeriod = FlumeConfiguration.get()
+				.getConfigHeartbeatPeriod();
+		CountDownLatch stopped = new CountDownLatch(1);
+
+		CheckTagIDThread() {
+			super("Check TagID");
+		}
+
+		public void run() {
+
+			while (!done) {
+				try {
+					checkTagID();
+					Clock.sleep(checkTagIdPeriod);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
+			stopped.countDown();
+		}
+
+	};
+
+	/**
+	 * Starts the CheckPoint Tag thread and then returns.
+	 */
+	public void start() {
+		checkTagIdThread.start();
+	}
+
+	public void stop() {
+		CountDownLatch stopped = checkTagIdThread.stopped;
+		checkTagIdThread.done = true;
+		try {
+			stopped.await();
+		} catch (InterruptedException e) {
+			LOG.error("Problem waiting for livenessManager to stop", e);
+		}
+	}
+
+	public void checkTagID() {
+		// TODO Auto-generated method stub
+		//tagID null check
+		List<String> tagIds = null;
+		try {
+			for(int i=0; i<agentList.size(); i++){
+				tagIds = client.checkTagId(agentList.get(i));
+				Iterator<String> it = tagIds.iterator();
+				while (it.hasNext()) {
+					updateCheckPointFile(it.next());
+				}
+			}
+		} catch (TException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+
+	}
+
 	public static void main(String args[]) {
-		CheckPointAgentManager cpam = new CheckPointAgentManagerImpl();
+		CheckPointAgentManager cpam = new CheckPointAgentManagerImpl(
+				"localhost");
 		System.out.println(cpam.getTagId("a1", "test.lg"));
 		// System.out.println(cpam.getOffset("teaast8.log"));
 		// cpam.addPandingQ("teaast3.log", "11112", 20);
 		// cpam.addPandingQ("teaast2.log", "11113", 90);
 		// cpam.updateCheckPointFile("teaast2.log", "11113");
-
 	}
 
 }
