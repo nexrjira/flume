@@ -91,6 +91,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	@Override
 	public void startClient(String collector) {
 		// TODO Auto-generated method stub
+		// CheckPoint Thrift client
 		this.collectorHost = collector;
 		socket = new TSocket(collectorHost, FlumeConfiguration.get()
 				.getCheckPointPort());
@@ -105,11 +106,16 @@ public class CheckPointManagerImpl implements CheckPointManager {
 			e.printStackTrace();
 		}
 	}
+	
+	@Override
+	public void stopClient() {
+		// TODO Auto-generated method stub
+		// CheckPoint Thrift client
+		transport.close();
+	}
 
 	@Override
 	public void startServer() {
-
-		log.info("Server Started");
 		try {
 			processor = new CheckPointService.Processor(new CheckPointHandler());
 			serverSocket = new TNonblockingServerSocket(FlumeConfiguration
@@ -122,7 +128,6 @@ public class CheckPointManagerImpl implements CheckPointManager {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 	}
 
 	@Override
@@ -150,6 +155,162 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		return tagId;
 	}
 
+	
+
+	@Override
+	public Map<String, Long> getOffset(String logicalNodeName) {
+		// TODO Auto-generated method stub
+		Map<String, Long> result = new HashMap<String, Long>();
+
+		FileReader fileReader;
+		BufferedReader reader;
+
+		File ckpointFilePath = new File(checkPointFilePath + File.separator
+				+ logicalNodeName + File.separator + "checkpoint");
+		try {
+			if (!ckpointFilePath.exists()) {
+				return null;
+			} else {
+				fileReader = new FileReader(ckpointFilePath);
+				reader = new BufferedReader(fileReader);
+				String line = null;
+				while ((line = reader.readLine()) != null) {
+					result.put(line.substring(0, line.indexOf(SEPERATOR)), Long
+							.valueOf(line.substring(line.indexOf(SEPERATOR),
+									line.length()).trim()));
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+	class CheckTagIDThread extends Thread {
+		volatile boolean done = false;
+		long checkTagIdPeriod = FlumeConfiguration.get()
+				.getConfigHeartbeatPeriod();
+		CountDownLatch stopped = new CountDownLatch(1);
+
+		CheckTagIDThread() {
+			super("Check TagID");
+		}
+
+		public void run() {
+
+			while (!done) {
+				try {
+//					startClient(collectorHost);
+					checkTagID();
+					Clock.sleep(checkTagIdPeriod);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
+			stopped.countDown();
+		}
+
+	};
+
+	@Override
+	public void startTagChecker() {
+		checkTagIdThread.start();
+	}
+	
+	@Override
+	public void stopTagChecker() {
+		CountDownLatch stopped = checkTagIdThread.stopped;
+		checkTagIdThread.done = true;
+		try {
+			stopped.await();
+		} catch (InterruptedException e) {
+			log.error("Problem waiting for livenessManager to stop", e);
+		}
+	}
+
+	@Override
+	public void addPendingQ(String tagId, Map<String, Long> tagContent) {
+		// TODO Auto-generated method stub
+		pendingQ.put(tagId, tagContent);
+		Log.info("add " + tagId + " into PendingQ");
+	}
+
+	@Override
+	public void addCollectorPendingList(String tagId) {
+		// TODO Auto-generated method stub
+		// compareStr agentName_fileName
+		String compareStr = tagId.substring(0, tagId.lastIndexOf("_"));
+		boolean isExist = false;
+
+		for (int i = 0; i < pendingList.size(); i++) {
+			if (pendingList.get(i).startsWith(compareStr)) {
+				isExist = true;
+			}
+		}
+
+		if (isExist) {
+			synchronized (sync) {
+				for (int i = 0; i < pendingList.size(); i++) {
+					if (pendingList.get(i).startsWith(compareStr)) {
+						pendingList.remove(i);
+						pendingList.add(tagId);
+					}
+				}
+			}
+		} else {
+			pendingList.add(tagId);
+		}
+	}
+
+	@Override
+	public void moveToCompleteList() {
+		// TODO Auto-generated method stub
+		Iterator<String> it = pendingList.iterator();
+		synchronized (sync) {
+			while (it.hasNext()) {
+				completeList.add(it.next());
+				it.remove();
+			}
+		}
+	}
+
+	@Override
+	public List<String> getTagList(String agentName) {
+		// TODO Auto-generated method stub
+		// return and delete by agentName
+		List<String> res = new ArrayList<String>();
+		Iterator<String> it = completeList.iterator();
+		while (it.hasNext()) {
+			String v = it.next();
+			if (v.startsWith(agentName)) {
+				res.add(v);
+				it.remove();
+			}
+		}
+		return res;
+	}
+	
+	public void checkTagID() {
+		// TODO Auto-generated method stub
+		// tagID null check
+		log.info("Check Server TagID " + agentList.size());
+		log.info(agentList.get(0).toString());
+		List<String> tagIds = null;
+		try {
+			for (int i = 0; i < agentList.size(); i++) {
+				tagIds = client.checkTagId(agentList.get(i));
+				log.info("TagSize " + tagIds.size());
+				updateCheckPointFile(agentList.get(i), tagIds);
+
+			}
+		} catch (TException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+	
 	public Map<String, Long> getOffset(List<String> tagIds) {
 		// TODO Auto-generated method stub
 		Map<String, Long> res = new HashMap<String, Long>();
@@ -168,7 +329,6 @@ public class CheckPointManagerImpl implements CheckPointManager {
 							res.put(key, tagContents.get(key));
 						}
 					}
-
 				}
 				pendingQ.remove(tagIds.get(tagId));
 			}
@@ -257,167 +417,6 @@ public class CheckPointManagerImpl implements CheckPointManager {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	@Override
-	public Map<String, Long> getOffset(String logicalNodeName) {
-		// TODO Auto-generated method stub
-		Map<String, Long> result = new HashMap<String, Long>();
-
-		FileReader fileReader;
-		BufferedReader reader;
-
-		File ckpointFilePath = new File(checkPointFilePath + File.separator
-				+ logicalNodeName + File.separator + "checkpoint");
-		try {
-			if (!ckpointFilePath.exists()) {
-				return null;
-			} else {
-				fileReader = new FileReader(ckpointFilePath);
-				reader = new BufferedReader(fileReader);
-				String line = null;
-				while ((line = reader.readLine()) != null) {
-					result.put(line.substring(0, line.indexOf(SEPERATOR)), Long
-							.valueOf(line.substring(line.indexOf(SEPERATOR),
-									line.length()).trim()));
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return result;
-	}
-
-	class CheckTagIDThread extends Thread {
-		volatile boolean done = false;
-		long checkTagIdPeriod = FlumeConfiguration.get()
-				.getConfigHeartbeatPeriod();
-		CountDownLatch stopped = new CountDownLatch(1);
-
-		CheckTagIDThread() {
-			super("Check TagID");
-		}
-
-		public void run() {
-
-			while (!done) {
-				try {
-//					startClient(collectorHost);
-					checkTagID();
-					Clock.sleep(checkTagIdPeriod);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-
-			stopped.countDown();
-		}
-
-	};
-
-	@Override
-	public void startTagCheck() {
-		checkTagIdThread.start();
-	}
-
-	public void stop() {
-		CountDownLatch stopped = checkTagIdThread.stopped;
-		checkTagIdThread.done = true;
-		try {
-			stopped.await();
-		} catch (InterruptedException e) {
-			log.error("Problem waiting for livenessManager to stop", e);
-		}
-	}
-
-	public void checkTagID() {
-		// TODO Auto-generated method stub
-		// tagID null check
-		log.info("Check Server TagID " + agentList.size());
-		log.info(agentList.get(0).toString());
-		List<String> tagIds = null;
-		try {
-			for (int i = 0; i < agentList.size(); i++) {
-				tagIds = client.checkTagId(agentList.get(i));
-				log.info("TagSize " + tagIds.size());
-				updateCheckPointFile(agentList.get(i), tagIds);
-
-			}
-		} catch (TException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-	}
-
-	@Override
-	public void addPendingQ(String tagId, Map<String, Long> tagContent) {
-		// TODO Auto-generated method stub
-		pendingQ.put(tagId, tagContent);
-		Log.info("add " + tagId + " into PendingQ");
-	}
-
-	@Override
-	public void addCollectorPendingList(String tagId) {
-		// TODO Auto-generated method stub
-		// compareStr agentName_fileName
-		String compareStr = tagId.substring(0, tagId.lastIndexOf("_"));
-		boolean isExist = false;
-
-		for (int i = 0; i < pendingList.size(); i++) {
-			if (pendingList.get(i).startsWith(compareStr)) {
-				isExist = true;
-			}
-		}
-
-		if (isExist) {
-			synchronized (sync) {
-				for (int i = 0; i < pendingList.size(); i++) {
-					if (pendingList.get(i).startsWith(compareStr)) {
-						pendingList.remove(i);
-						pendingList.add(tagId);
-					}
-				}
-			}
-		} else {
-			pendingList.add(tagId);
-		}
-	}
-
-	@Override
-	public void moveToCompleteList() {
-		// TODO Auto-generated method stub
-		Iterator<String> it = pendingList.iterator();
-		synchronized (sync) {
-			while (it.hasNext()) {
-				completeList.add(it.next());
-				it.remove();
-			}
-		}
-
-		log.info("PendingList " + pendingList.size());
-
-		for (int i = 0; i < completeList.size(); i++) {
-			log.info("complete " + completeList.get(i));
-		}
-	}
-
-	@Override
-	public List<String> getTagList(String agentName) {
-		// TODO Auto-generated method stub
-		// return and delete by agentName
-		System.out.println(agentName + " " + completeList.size());
-		List<String> res = new ArrayList<String>();
-		Iterator<String> it = completeList.iterator();
-		while (it.hasNext()) {
-			String v = it.next();
-			log.info("Complete QUEUE : " + v);
-			if (v.startsWith(agentName)) {
-				res.add(v);
-				it.remove();
-			}
-		}
-		return res;
 	}
 
 }

@@ -8,6 +8,8 @@ public interface CheckPointManager {
 	public String getTagId(String agentName, String filename);
 
 	public void startClient(String collector);
+	
+	public void stopClient();
 
 	/**
 	 * 
@@ -21,7 +23,9 @@ public interface CheckPointManager {
 
 	public void setCollectorHost(String host);
 
-	public void startTagCheck();
+	public void startTagChecker();
+	
+	public void stopTagChecker();
 	
 	//for Collector
 	public void startServer();
