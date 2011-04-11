@@ -160,6 +160,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	@Override
 	public Map<String, Long> getOffset(String logicalNodeName) {
 		// TODO Auto-generated method stub
+		// checkpoint 파일에서 해당 logical Node에 해당하는 파일과 offset을 전달.
 		Map<String, Long> result = new HashMap<String, Long>();
 
 		FileReader fileReader;
@@ -200,7 +201,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 			while (!done) {
 				try {
-//					startClient(collectorHost);
+					startClient(collectorHost);
 					checkTagID();
 					Clock.sleep(checkTagIdPeriod);
 				} catch (Exception e) {
@@ -314,6 +315,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	public Map<String, Long> getOffset(List<String> tagIds) {
 		// TODO Auto-generated method stub
 		Map<String, Long> res = new HashMap<String, Long>();
+		long lastOffset = 0;
 		for (int tagId = 0; tagId < tagIds.size(); tagId++) {
 			if (pendingQ.containsKey(tagIds.get(tagId))) {
 				Map<String, Long> tagContents = pendingQ.get(tagIds.get(tagId));
@@ -324,9 +326,11 @@ public class CheckPointManagerImpl implements CheckPointManager {
 					if (!res.containsKey(key)) {
 						res.put(key, tagContents.get(key));
 					} else {
-						long lastOffset = res.get(key);
 						if (lastOffset <= tagContents.get(key)) {
 							res.put(key, tagContents.get(key));
+							lastOffset = res.get(key);
+						}else{
+							res.put(key, lastOffset);
 						}
 					}
 				}
