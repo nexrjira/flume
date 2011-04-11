@@ -231,8 +231,6 @@ public class CheckPointManagerImpl implements CheckPointManager {
 								+ compareMap.get(cps[i]) + LINE_SEPERATOR);
 					}
 
-					log.info("1.contents " + contents);
-
 					fw = new FileWriter(ckpointFile);
 					bw = new BufferedWriter(fw);
 					bw.write(contents.toString());
@@ -247,7 +245,6 @@ public class CheckPointManagerImpl implements CheckPointManager {
 						contents.append(keys[i].toString() + SEPERATOR
 								+ res.get(keys[i]) + LINE_SEPERATOR);
 					}
-					log.info("2.contents " + contents);
 					fw = new FileWriter(ckpointFile);
 					bw = new BufferedWriter(fw);
 					bw.write(contents.toString());
