@@ -211,7 +211,7 @@ public class TestCheckPointManager {
 		
 //		manager.startClient("localhost");
 		manager.setCollectorHost("localhost");
-		manager.startTagCheck();
+		manager.startTagChecker();
 		manager.moveToCompleteList();
 		manager.startServer();
 		
@@ -253,7 +253,7 @@ public class TestCheckPointManager {
 		
 //		manager.startClient("localhost");
 		manager.setCollectorHost("localhost");
-		manager.startTagCheck();
+		manager.startTagChecker();
 		manager.moveToCompleteList();
 		manager.startServer();
 		
