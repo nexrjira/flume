@@ -67,6 +67,8 @@ import com.cloudera.util.NetUtils;
 import com.cloudera.util.Pair;
 import com.cloudera.util.StatusHttpServer;
 import com.google.common.base.Preconditions;
+import com.nexr.agent.cp.CheckPointManager;
+import com.nexr.agent.cp.CheckPointManagerImpl;
 import com.sun.jersey.api.core.DefaultResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
@@ -96,7 +98,7 @@ public class FlumeNode implements Reportable {
   // run mode for this node.
   final boolean startHttp; // should this node start its own http status server
   private StatusHttpServer http = null;
-
+  
   private FlumeVMInfo vmInfo;
   private SystemInfo sysInfo;
   private final LivenessManager liveMan;
@@ -122,6 +124,7 @@ public class FlumeNode implements Reportable {
 
   private final ChokeManager chokeMan;
 
+  private CheckPointManager checkPointManager;
   /**
    * A FlumeNode constructor with pluggable xxxManagers. This is used for
    * debugging and test cases. The http server is assumed not to be started, and
@@ -185,6 +188,8 @@ public class FlumeNode implements Reportable {
         + this.getPhysicalNodeName() + ".");
     this.sysInfo = new SystemInfo(PHYSICAL_NODE_REPORT_PREFIX
         + this.getPhysicalNodeName() + ".");
+    
+    this.checkPointManager = CheckPointManagerImpl.getInstance();
 
   }
 
