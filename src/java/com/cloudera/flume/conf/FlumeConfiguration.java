@@ -262,7 +262,8 @@ public class FlumeConfiguration extends Configuration {
   public static final String RPC_TYPE_AVRO = "AVRO";
   
   // for CheckPoint
-  public static final String CHECKPOINT_FILE = "checkpoint.file.path";
+  public static final String CHECKPOINT_FILE_PATH = "checkpoint.file.path";
+  public static final String CHECKPOINT_PORT = "checkpoint.port";
 
   /**
    * Returns true if there is more than one server in MASTER_SERVERS.
@@ -1040,7 +1041,11 @@ public class FlumeConfiguration extends Configuration {
   }
   
   public String getCheckPointFile() {
-	    return get(CHECKPOINT_FILE, "/tmp/agent/checkpoint");
+	    return get(CHECKPOINT_FILE_PATH, "D:\\data");
+  }
+  
+  public int getCheckPointPort() {
+	    return getInt(CHECKPOINT_PORT, 13421);
   }
   
 	  
