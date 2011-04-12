@@ -37,6 +37,9 @@ import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeBuilder;
 import com.cloudera.flume.conf.FlumeSpecException;
 import com.cloudera.flume.conf.LogicalNodeContext;
+import com.cloudera.flume.core.Event;
+import com.cloudera.flume.core.EventSink;
+import com.cloudera.flume.core.EventSinkDecorator;
 import com.cloudera.flume.core.connector.DirectDriver;
 import com.cloudera.flume.reporter.ReportEvent;
 import com.cloudera.flume.reporter.aggregator.AccumulatorSink;
@@ -177,7 +180,7 @@ public class TestTailDirSource {
   public void testCheckpointFiles() throws IOException, InterruptedException {
 	  File tmpdir = FileUtil.mktempdir();
 	  TailDirSource src = new TailDirSource(tmpdir, ".*");
-	  DummyCheckPointManager dcpMap = new DummyCheckPointManager();
+	  DummyCheckPointManager dcpManager = new DummyCheckPointManager();
 	  
 	  List<String> fileNames = genFilesWithFixedContent(tmpdir, "foo", 10, 100);
 	  
@@ -185,14 +188,29 @@ public class TestTailDirSource {
 	  for(String fileName : fileNames) {
 		  checkPointMap.put(fileName, 550l);
 	  }
-	  dcpMap.setCheckPointMap(checkPointMap);
-	  src.setCheckPointManager(dcpMap);
-	  src.readCheckPoint("dummy");
+	  dcpManager.setCheckPointMap(checkPointMap);
+	  src.setCheckPointManager(dcpManager);
+	  src.initCheckPoint("dummy");
+
+	  
 	  
 	  AccumulatorSink cnt = new AccumulatorSink("tailcount");
+	  
+	  EventSinkDecorator<EventSink> eventSinkDecorator = new EventSinkDecorator<EventSink>(cnt) {
+
+		@Override
+		public void append(Event e) throws IOException, InterruptedException {
+			if(e.get(TailSource.A_TAILSRCOFFSET) != null) {
+				return;
+			}
+			super.append(e);
+		}
+		  
+	  };
+	  
 	  src.open();
-	  cnt.open();
-	  DirectDriver drv = new DirectDriver(src, cnt);
+	  eventSinkDecorator.open();
+	  DirectDriver drv = new DirectDriver(src, eventSinkDecorator);
 	  
 	  drv.start();
 	  
@@ -203,7 +221,7 @@ public class TestTailDirSource {
 	  System.out.println("cntCount : " + cnt.getCount());
 	  drv.stop();
 	  src.close();
-	  cnt.close();
+	  eventSinkDecorator.close();
 	  FileUtil.rmr(tmpdir);
 	  
   }

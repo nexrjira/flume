@@ -28,9 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.cloudera.flume.agent.DummyCheckPointManager;
 import com.cloudera.flume.agent.FlumeNode;
-import com.cloudera.flume.agent.ICheckPointManager;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.conf.SourceFactory.SourceBuilder;
@@ -43,6 +41,7 @@ import com.cloudera.util.dirwatcher.DirChangeHandler;
 import com.cloudera.util.dirwatcher.DirWatcher;
 import com.cloudera.util.dirwatcher.RegexFileFilter;
 import com.google.common.base.Preconditions;
+import com.nexr.agent.cp.CheckPointManager;
 
 /**
  * This source tails all the file in a directory that match a specified regular
@@ -62,7 +61,7 @@ public class TailDirSource extends EventSource.Base {
   final private String delimRegex;
   final private DelimMode delimMode;
   
-  private ICheckPointManager checkPointManager;
+  private CheckPointManager checkPointManager;
   private Map<String, Long> checkPointOffsetMap;
   
 
@@ -124,13 +123,14 @@ public class TailDirSource extends EventSource.Base {
   }
   
   /**
-   *TODO readCheckPoint -> initCheckpoint 로 변경하는게 어떨까? by bitaholic
-   * @param logicalName
+   * @param logicalNodeName
    */
-  protected void readCheckPoint(String logicalName) {
-	  //TODO builder에서 checkpointManager의 reference를 가져와서 설정 해주는 것으로 변경 해야 함
-	  
-	  this.checkPointOffsetMap = checkPointManager.getCheckPoint(logicalName);
+  protected void initCheckPoint(String logicalNodeName) {
+	  if(checkPointManager == null) {
+		  this.checkPointOffsetMap =  FlumeNode.getInstance().getCheckPointManager().getOffset(logicalNodeName);
+	  } else {
+		  this.checkPointOffsetMap = checkPointManager.getOffset(logicalNodeName);
+	  }
   }
   
   /**
@@ -410,13 +410,13 @@ public class TailDirSource extends EventSource.Base {
 	        String logicalNodeName = ctx.getValue(LogicalNodeContext.C_LOGICAL);
 	        Preconditions.checkArgument(logicalNodeName != null,
             "Context does not have a logical node name");
-	        source.readCheckPoint(logicalNodeName);
+	        source.initCheckPoint(logicalNodeName);
 	        return source;
 	      }
 	  };
   }
 
-  public void setCheckPointManager(ICheckPointManager checkpointManager) {
+  public void setCheckPointManager(CheckPointManager checkpointManager) {
 	this.checkPointManager = checkpointManager;
   }
 }
