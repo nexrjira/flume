@@ -138,7 +138,7 @@ public class TestTailDirSource {
 	      fileNames.add(tmpfile.getName());
 	      PrintWriter pw = new PrintWriter(tmpfile);
 	      for (int j = 0; j < lines; j++) {
-	        pw.println("0123456789");
+	        pw.println("0123456789"); //TODO 정해진 byte의 줄을 만들 수 있게 수정
 	      }
 	      pw.close();
 	      System.out.println(tmpfile.getName() + " : " + tmpfile.length());
@@ -183,7 +183,6 @@ public class TestTailDirSource {
 	  
 	  Map<String, Long> checkPointMap = new HashMap<String, Long>();
 	  for(String fileName : fileNames) {
-		  System.out.println("add File : " + fileName);
 		  checkPointMap.put(fileName, 550l);
 	  }
 	  dcpMap.setCheckPointMap(checkPointMap);

@@ -83,6 +83,7 @@ import com.google.common.base.Preconditions;
 public class TailSource extends EventSource.Base {
   private static final Logger LOG = LoggerFactory.getLogger(TailSource.class);
   public static final String A_TAILSRCFILE = "tailSrcFile";
+  public static final String A_TAILSRCOFFSET = "tailSrcOffset";
 
   private static int thdCount = 0;
   private volatile boolean done = false;

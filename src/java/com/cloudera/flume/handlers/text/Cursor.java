@@ -60,6 +60,7 @@ public class Cursor {
   long lastChannelPos;
   long lastChannelSize;
   int readFailures;
+  boolean useCheckpoint;
 
   Cursor(BlockingQueue<Event> sync, File f) {
     this(sync, f, 0, 0, 0);
@@ -67,12 +68,18 @@ public class Cursor {
 
   Cursor(BlockingQueue<Event> sync, File f, long lastReadOffset,
       long lastFileLen, long lastMod) {
-    this.sync = sync;
-    this.file = f;
-    this.lastChannelPos = lastReadOffset;
-    this.lastChannelSize = lastFileLen;
-    this.lastFileMod = lastMod;
-    this.readFailures = 0;
+    this(sync, f, lastReadOffset, lastFileLen, lastMod, false);
+  }
+  
+  Cursor(BlockingQueue<Event> sync, File f, long lastReadOffset,
+	      long lastFileLen, long lastMod, boolean useCheckpoint) {
+	  this.sync = sync;
+	  this.file = f;
+	  this.lastChannelPos = lastReadOffset;
+	  this.lastChannelSize = lastFileLen;
+	  this.lastFileMod = lastMod;
+	  this.readFailures = 0;
+	  this.useCheckpoint = useCheckpoint;
   }
 
   /**
@@ -367,6 +374,12 @@ public class Cursor {
         // extract lines
         extractLines(buf);
 
+        if(useCheckpoint) { 
+        	Event e = new EventImpl();
+        	e.set(TailSource.A_TAILSRCFILE, file.getName().getBytes());
+        	e.set(TailSource.A_TAILSRCOFFSET, ByteBuffer.allocate(8).putLong(lastChannelPos).array());
+        	sync.put(e);
+        }
         lastRd = rd;
       } while (progress); // / potential race
 
@@ -375,7 +388,8 @@ public class Cursor {
       // read, then it remain in the byte buffer.
 
     }
-
+    
+    
     LOG.debug("tail " + file + ": last read position " + lastChannelPos
         + ", madeProgress: " + madeProgress);
 

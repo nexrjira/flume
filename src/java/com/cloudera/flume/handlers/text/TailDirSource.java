@@ -123,8 +123,13 @@ public class TailDirSource extends EventSource.Base {
     this.delimMode = delimMode;
   }
   
+  /**
+   *TODO readCheckPoint -> initCheckpoint 로 변경하는게 어떨까? by bitaholic
+   * @param logicalName
+   */
   protected void readCheckPoint(String logicalName) {
-	  //TODO builder에서 checkpointManager의 reference를 가져와서 설정 해주는 것으로 변경 해야 함  
+	  //TODO builder에서 checkpointManager의 reference를 가져와서 설정 해주는 것으로 변경 해야 함
+	  
 	  this.checkPointOffsetMap = checkPointManager.getCheckPoint(logicalName);
   }
   
@@ -194,7 +199,7 @@ public class TailDirSource extends EventSource.Base {
         			  checkPointOffset = f.length();
         		  }
         		  c = new Cursor(tail.sync, f, checkPointOffsetMap.get(f.getName()), 
-        				  f.length(), f.lastModified());
+        				  f.length(), f.lastModified(), true);
         		  try {
   					c.initCursorPos();
           		  } catch (InterruptedException e) {
@@ -233,7 +238,7 @@ public class TailDirSource extends EventSource.Base {
         			  checkPointOffset = f.length();
         		  }
         		  c = new CustomDelimCursor(tail.sync, f, checkPointOffsetMap.get(f.getName()), 
-        				  f.length(), f.lastModified(), delimRegex, delimMode);
+        				  f.length(), f.lastModified(), delimRegex, delimMode, true);
         		  try {
 					c.initCursorPos();
         		  } catch (InterruptedException e) {
