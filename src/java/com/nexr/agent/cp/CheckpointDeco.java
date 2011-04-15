@@ -6,12 +6,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.cloudera.flume.agent.FlumeNode;
+import com.cloudera.flume.agent.LogicalNode;
+import com.cloudera.flume.conf.Context;
+import com.cloudera.flume.conf.LogicalNodeContext;
+import com.cloudera.flume.conf.SinkFactory.SinkDecoBuilder;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.core.EventSinkDecorator;
 import com.cloudera.flume.handlers.text.TailSource;
 import com.cloudera.util.CharEncUtils;
+import com.cloudera.util.Clock;
+import com.google.common.base.Preconditions;
 
 public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 
@@ -53,9 +59,9 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 	@Override
 	public void close() throws IOException, InterruptedException {
 		// TODO RollSink가 현재의 Sink를 닫았기 때문에 EndEvent를 보내줘야 한다.
-		super.close();
 		super.append(closeEvent());
 		cpManager.addPendingQ(new String(tag), offsetMap);
+		super.close();
 	}
 
 	@Override
@@ -81,5 +87,19 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 
 	public void setCpManager(CheckPointManager cpManager) {
 		this.cpManager = cpManager;
+	}
+	
+	public static SinkDecoBuilder builder() {
+		return new SinkDecoBuilder() {
+
+			@Override
+			public EventSinkDecorator<EventSink> build(Context context,
+					String... argv) {
+				Preconditions.checkArgument(argv.length == 0, "usage: checkpointInjector");
+				//TODO context.getValue(LogicalNodeContext.C_LOGICAL) 이 항상 있는가? 
+				return new CheckpointDeco(null, (context.getValue(LogicalNodeContext.C_LOGICAL) + Clock.nanos()).getBytes(), 
+						FlumeNode.getInstance().getCheckPointManager());
+			}
+		};
 	}
 }
