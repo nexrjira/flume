@@ -264,6 +264,7 @@ public class FlumeConfiguration extends Configuration {
   // for CheckPoint
   public static final String CHECKPOINT_FILE_PATH = "checkpoint.file.path";
   public static final String CHECKPOINT_PORT = "checkpoint.port";
+  public static final String CHECKPOINT_TIMEOUT = "checkpoint.timeout";
 
   /**
    * Returns true if there is more than one server in MASTER_SERVERS.
@@ -1047,6 +1048,11 @@ public class FlumeConfiguration extends Configuration {
   public int getCheckPointPort() {
 	    return getInt(CHECKPOINT_PORT, 13421);
   }
+  
+  public long getCheckPointTimeout() {
+	    return getLong(CHECKPOINT_TIMEOUT, 10000); //60000
+  }
+
   
 	  
 }
