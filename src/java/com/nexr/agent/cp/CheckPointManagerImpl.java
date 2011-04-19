@@ -92,18 +92,23 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	public void startClient(String collector) {
 		// TODO Auto-generated method stub
 		// CheckPoint Thrift client
-		this.collectorHost = collector;
-		socket = new TSocket(collectorHost, FlumeConfiguration.get()
-				.getCheckPointPort());
-		socket.setTimeout(timeout);
-		transport = new TFramedTransport(socket);
-		protocol = new TBinaryProtocol(transport);
-		client = new CheckPointService.Client(protocol);
-		try {
-			transport.open();
-		} catch (TTransportException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if(transport == null || !transport.isOpen()){
+			log.info("New Client");
+			this.collectorHost = collector;
+			socket = new TSocket(collectorHost, FlumeConfiguration.get()
+					.getCheckPointPort());
+			socket.setTimeout(timeout);
+			transport = new TFramedTransport(socket);
+			protocol = new TBinaryProtocol(transport);
+			client = new CheckPointService.Client(protocol);
+			try {
+				transport.open();
+			} catch (TTransportException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}else{
+			log.info("Client aleady Exist");
 		}
 	}
 	
@@ -116,17 +121,22 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 	@Override
 	public void startServer() {
-		try {
-			processor = new CheckPointService.Processor(new CheckPointHandler());
-			serverSocket = new TNonblockingServerSocket(FlumeConfiguration
-					.get().getCheckPointPort());
-			arguments = new TNonblockingServer.Args(serverSocket);
-			arguments.processor(processor);
-			server = new TNonblockingServer(arguments);
-			server.serve();
-		} catch (TTransportException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if(server == null || !server.isServing()){
+			log.info("Server is not Serving");
+			try {
+				processor = new CheckPointService.Processor(new CheckPointHandler());
+				serverSocket = new TNonblockingServerSocket(FlumeConfiguration
+						.get().getCheckPointPort());
+				arguments = new TNonblockingServer.Args(serverSocket);
+				arguments.processor(processor);
+				server = new TNonblockingServer(arguments);
+				server.serve();
+			} catch (TTransportException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}else{
+			log.info("Server is Serving");
 		}
 	}
 
