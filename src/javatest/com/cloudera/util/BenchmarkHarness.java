@@ -53,6 +53,7 @@ import com.cloudera.flume.handlers.endtoend.CollectorAckListener;
 import com.cloudera.flume.reporter.ReportEvent;
 import com.cloudera.flume.reporter.ReportManager;
 import com.cloudera.flume.reporter.Reportable;
+import com.nexr.agent.cp.CheckPointManager;
 
 /**
  * This sets up a batttery of synthetic datasets for testing against different
@@ -95,7 +96,8 @@ public class BenchmarkHarness {
    */
   public static void setupFlumeNode(LogicalNodeManager nodesMan,
       WALManager walMan, DiskFailoverManager dfMan,
-      CollectorAckListener colAck, LivenessManager liveman) {
+      CollectorAckListener colAck, LivenessManager liveman, 
+      CheckPointManager cpManager) {
     try {
       tmpdir = FileUtil.mktempdir();
     } catch (Exception e) {
@@ -115,9 +117,9 @@ public class BenchmarkHarness {
     colAck = (colAck != null) ? colAck : new CollectorAckListener(mock);
     liveman = (liveman != null) ? liveman : new LivenessManager(nodesMan, mock,
         walMan);
-
+    
     node = new FlumeNode(NetUtils.localhost(), mock, nodesMan, walMan, dfMan,
-        colAck, liveman);
+        colAck, liveman, cpManager);
   }
 
   /**

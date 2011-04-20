@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.cloudera.flume.agent.FlumeNode;
-import com.cloudera.flume.agent.LogicalNode;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.conf.SinkFactory.SinkDecoBuilder;

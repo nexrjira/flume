@@ -119,7 +119,7 @@ public class FlumeNode implements Reportable {
   private Map<String, DiskFailoverManager> failoverMans = new HashMap<String, DiskFailoverManager>();
 
   final private CollectorAckListener collectorAck;
-
+  
   final String physicalNodeName;
 
   private final ChokeManager chokeMan;
@@ -132,7 +132,8 @@ public class FlumeNode implements Reportable {
    */
   public FlumeNode(String name, MasterRPC rpc, LogicalNodeManager nodesMan,
       WALManager walMan, DiskFailoverManager dfMan,
-      CollectorAckListener colAck, LivenessManager liveman) {
+      CollectorAckListener colAck, LivenessManager liveman, 
+      CheckPointManager cpManager) {
     this.physicalNodeName = name;
     rpcMan = rpc;
     instance = this;
@@ -152,6 +153,7 @@ public class FlumeNode implements Reportable {
         simpleReportManager, rpcMan);
     this.sysInfo = new SystemInfo(PHYSICAL_NODE_REPORT_PREFIX
         + this.physicalNodeName + ".");
+    this.checkPointManager = cpManager;
   }
 
   public FlumeNode(FlumeConfiguration conf, String nodeName, MasterRPC rpc,
