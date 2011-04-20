@@ -29,7 +29,7 @@ public interface CheckPointManager {
 	
 	//for Collector
 	public void startServer();
-	
+	@Deprecated
 	public void addCollectorPendingList(String tagId);
 	
 	public void addCollectorCompleteList(List<String> tagIds);

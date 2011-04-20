@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -79,6 +80,8 @@ public class CollectorSink extends EventSink.Base {
   Set<String> rollAckSet = new HashSet<String>();
   
   Set<String> rollCheckpointSet = new HashSet<String>();
+  
+  boolean useCheckpoint;
 
   // References package exposed for testing
   final RollSink roller;
@@ -97,6 +100,7 @@ public class CollectorSink extends EventSink.Base {
       final Tagger tagger, long checkmillis, AckListener ackDest, boolean useCheckpoint) {
     this.ackDest = ackDest;
     this.snkSpec = snkSpec;
+    this.useCheckpoint = useCheckpoint;
     roller = new RollSink(ctx, snkSpec, new TimeTrigger(tagger, millis),
         checkmillis) {
       // this is wraps the normal roll sink with an extra roll detection
@@ -206,8 +210,9 @@ public class CollectorSink extends EventSink.Base {
       LOG.debug("closing roll detect deco {}", tag);
       super.close();
       flushRollAcks();
-      //TODO 체크포인트를 사용할 때 만 처리 하게 해야 
-      flushCheckpointRollAcks();
+      if(useCheckpoint) {
+    	  flushCheckpointRollAcks();
+      }
       LOG.debug("closed  roll detect deco {}", tag);
     }
 
@@ -226,15 +231,13 @@ public class CollectorSink extends EventSink.Base {
     }
     
     void flushCheckpointRollAcks() {
-    	Collection<String> acktags;
+    	List<String> acktags;
     	synchronized (rollCheckpointSet) {
     		acktags = new ArrayList<String>(rollCheckpointSet);
 			rollCheckpointSet.clear();
 		}
     	
-   		for(String at : acktags) {
-   			cpManager.addCollectorPendingList(at);
-    	}
+    	cpManager.addCollectorCompleteList(acktags);
     }
   };
 

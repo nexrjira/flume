@@ -238,18 +238,18 @@ public class TestCollectorSink {
 	  MemorySinkSource cpmem = new MemorySinkSource();
 	  
 	  MockCheckpointManager mockCpManager = new MockCheckpointManager();
-	  CheckpointDeco cpDeco = new CheckpointDeco(cpmem, "tag1".getBytes(), mockCpManager);
+	  CheckpointDeco cpDeco = new CheckpointDeco(cpmem, "tag1".getBytes(), "node1",  mockCpManager);
 	  
 	  cpDeco.open();
 	  cpDeco.append(new EventImpl("foo 1".getBytes()));
 	  cpDeco.close();
 	  
-	  cpDeco = new CheckpointDeco(cpmem, "tag2".getBytes(), mockCpManager);
+	  cpDeco = new CheckpointDeco(cpmem, "tag2".getBytes(), "node1", mockCpManager);
 	  cpDeco.open();
 	  cpDeco.append(new EventImpl("foo 2".getBytes()));
 	  cpDeco.close();
 	  
-	  cpDeco = new CheckpointDeco(cpmem, "tag3".getBytes(), mockCpManager);
+	  cpDeco = new CheckpointDeco(cpmem, "tag3".getBytes(), "node1", mockCpManager);
 	  cpDeco.open();
 	  cpDeco.append(new EventImpl("foo 3".getBytes()));
 	  cpDeco.close();
@@ -275,11 +275,6 @@ public class TestCollectorSink {
 	}
 
 	@Override
-	public void addPendingQ(String tagId, Map<String, Long> tagContent) {
-		pending.put(tagId, tagContent);
-	}
-
-	@Override
 	public Map<String, Long> getOffset(String logicalNodeName) {
 		return null;
 	}
@@ -302,7 +297,6 @@ public class TestCollectorSink {
 
 	@Override
 	public void addCollectorPendingList(String tagId) {
-		collect_pending.add(tagId);
 	}
 
 	@Override
@@ -310,8 +304,20 @@ public class TestCollectorSink {
 	}
 
 	@Override
-	public List<String> getTagList(String agentName) {
-		return null;
+	public void addPendingQ(String tagId, String logicalNodeName,
+			Map<String, Long> tagContent) {
+		pending.put(tagId, tagContent);
+	}
+
+	@Override
+	public void addCollectorCompleteList(List<String> tagIds) {
+		collect_pending.addAll(tagIds);
+	}
+
+	@Override
+	public boolean getTagList(String tagId) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 	  
   }

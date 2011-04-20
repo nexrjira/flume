@@ -29,16 +29,18 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 	
 	private Map<String, Long> offsetMap;
 	private CheckPointManager cpManager;
+	private String logicalNodeName;
 		
 	public CheckpointDeco(EventSink s, byte[] tag) {
-		this(s, tag, null);
+		this(s, tag, null, null);
 	}
 	
-	public CheckpointDeco(EventSink s, byte[]  tag, CheckPointManager cpManager) {
+	public CheckpointDeco(EventSink s, byte[]  tag, String logicalNodeName, CheckPointManager cpManager) {
 		super(s);
 		this.tag = tag;
 		this.offsetMap = new HashMap<String, Long>();
 		this.cpManager = cpManager;
+		this.logicalNodeName = logicalNodeName;
 	}
 
 	@Override
@@ -59,7 +61,8 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 	public void close() throws IOException, InterruptedException {
 		// TODO RollSink가 현재의 Sink를 닫았기 때문에 EndEvent를 보내줘야 한다.
 		super.append(closeEvent());
-		cpManager.addPendingQ(new String(tag), offsetMap);
+//		cpManager.addPendingQ(new String(tag), offsetMap);
+		cpManager.addPendingQ(new String(tag), logicalNodeName, offsetMap);
 		super.close();
 	}
 
@@ -95,9 +98,11 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 			public EventSinkDecorator<EventSink> build(Context context,
 					String... argv) {
 				Preconditions.checkArgument(argv.length == 0, "usage: checkpointInjector");
-				//TODO context.getValue(LogicalNodeContext.C_LOGICAL) 이 항상 있는가? 
-				return new CheckpointDeco(null, (context.getValue(LogicalNodeContext.C_LOGICAL) + Clock.nanos()).getBytes(), 
-						FlumeNode.getInstance().getCheckPointManager());
+				//TODO context.getValue(LogicalNodeContext.C_LOGICAL) 이 항상 있는가?
+				String logicalNodeName = context.getValue(LogicalNodeContext.C_LOGICAL);
+				
+				return new CheckpointDeco(null, (logicalNodeName + Clock.nanos()).getBytes(), 
+						logicalNodeName, FlumeNode.getInstance().getCheckPointManager());
 			}
 		};
 	}

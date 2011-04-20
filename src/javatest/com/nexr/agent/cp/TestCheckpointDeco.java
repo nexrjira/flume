@@ -30,7 +30,7 @@ public class TestCheckpointDeco {
 		
 		final String TAG_ID = "tag1";
 		
-		CheckpointDeco deco = new CheckpointDeco(snk, TAG_ID.getBytes(), manager);
+		CheckpointDeco deco = new CheckpointDeco(snk, TAG_ID.getBytes(), "node1", manager);
 		
 		deco.open();
 		

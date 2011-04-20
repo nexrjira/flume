@@ -253,6 +253,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		Log.info("add " + tagId + " into PendingQ");
 	}
 
+	@Deprecated
 	@Override
 	public void addCollectorPendingList(String tagId) {
 		// TODO Auto-generated method stub
