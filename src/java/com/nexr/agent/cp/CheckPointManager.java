@@ -17,7 +17,7 @@ public interface CheckPointManager {
 	 * @param tagContent
 	 *            : key:fileName, value:lastOffset
 	 */
-	public void addPendingQ(String tagId, Map<String, Long> tagContent);
+	public void addPendingQ(String tagId, String logicalNodeName, Map<String, Long> tagContent);
 
 	public Map<String, Long> getOffset(String logicalNodeName);
 
@@ -31,8 +31,10 @@ public interface CheckPointManager {
 	public void startServer();
 	
 	public void addCollectorPendingList(String tagId);
+	
+	public void addCollectorCompleteList(List<String> tagIds);
 
 	public void moveToCompleteList();
 
-	public List<String> getTagList(String agentName);
+	public boolean getTagList(String tagId);
 }

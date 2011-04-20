@@ -1,7 +1,5 @@
 package com.nexr.collector.cp;
 
-import java.util.List;
-
 import org.apache.thrift.TException;
 
 import com.cloudera.flume.agent.FlumeNode;
@@ -19,10 +17,9 @@ public class CheckPointHandler implements CheckPointService.Iface{
 	}
 	
 	@Override
-	public List<String> checkTagId(String agentName)
+	public boolean checkTagId(String tagId)
 			throws TException {
 		// TODO Auto-generated method stub
-		List<String> tags = manager.getTagList(agentName);
-		return tags;
+		return manager.getTagList(tagId);
 	}
 }
