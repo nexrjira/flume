@@ -17,8 +17,6 @@
  */
 package com.cloudera.flume.agent;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -33,16 +31,8 @@ import com.cloudera.flume.conf.FlumeBuilder;
 import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.flume.conf.FlumeSpecException;
 import com.cloudera.flume.conf.LogicalNodeContext;
-import com.cloudera.flume.conf.SinkFactoryImpl;
-import com.cloudera.flume.conf.SinkFactory.SinkBuilder;
-import com.cloudera.flume.core.Event;
-import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.core.EventSource;
-import com.cloudera.flume.core.EventUtil;
-import com.cloudera.flume.handlers.avro.AvroJsonOutputFormat;
-import com.cloudera.flume.handlers.debug.ConsoleEventSink;
-import com.cloudera.flume.handlers.debug.MemorySinkSource;
 import com.cloudera.util.FileUtil;
 
 /**
@@ -129,6 +119,26 @@ public class TestAgentSink {
     }
     Assert.fail("unexpected fall through");
   }
+  
+  @Test
+  public void testCheckpointBuilder() throws FlumeSpecException {
+	  String snk = "agentCheckpointSink";
+	  FlumeBuilder.buildSink(new Context(), snk);
+	  
+	  String snk2 = "agentCheckpointSink(\"localhost\")";
+	  FlumeBuilder.buildSink(new Context(), snk2);
+	  
+	  String snk3 = "agentCheckpointSink(\"localhost\", 12345)";
+	  FlumeBuilder.buildSink(new Context(), snk3);
+	  
+	  try {
+		  String snk4 = "agentCheckpointSink(\"localhost\", 12345, \"fail\")";
+		  FlumeBuilder.buildSink(new Context(), snk4);
+	  } catch (Exception e) {
+		  return;
+	  }
+	  Assert.fail("unexpected fall through");
+  }
 
   /**
    * This test makes sure that opening and closing in rapid succession does not
@@ -151,8 +161,5 @@ public class TestAgentSink {
       snk.open();
       snk.close();
     }
-
   }
-
-
 }

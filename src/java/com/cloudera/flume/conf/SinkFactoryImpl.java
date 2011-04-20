@@ -87,6 +87,7 @@ import com.cloudera.flume.reporter.sampler.IntervalSampler;
 import com.cloudera.flume.reporter.sampler.ProbabilitySampler;
 import com.cloudera.flume.reporter.sampler.ReservoirSamplerDeco;
 import com.cloudera.util.Pair;
+import com.nexr.agent.cp.CheckpointDeco;
 
 /**
  * This factory builds sink and sink decorators. This implementation requires a
@@ -104,9 +105,11 @@ public class SinkFactoryImpl extends SinkFactory {
       { "agentE2ESink", AgentSink.e2eBuilder() }, // now with acks
       { "agentDFOSink", AgentSink.dfoBuilder() },
       { "agentBESink", AgentSink.beBuilder() },
+      { "agentCPSink", AgentSink.cpBuilder() },
 
       { "agentFailoverSink", AgentSink.dfoBuilder() },
       { "agentBestEffortSink", AgentSink.beBuilder() },
+      { "agentCheckpointSink", AgentSink.cpBuilder() },
 
       { "agentE2EChain", AgentFailChainSink.e2eBuilder() },
       { "agentDFOChain", AgentFailChainSink.dfoBuilder() },
@@ -164,6 +167,8 @@ public class SinkFactoryImpl extends SinkFactory {
       { "insistentOpen", InsistentOpenDecorator.builder() },
       { "insistentAppend", InsistentAppendDecorator.builder() },
       { "stubbornAppend", StubbornAppendSink.builder() },
+      
+      { "checkpointDeco", CheckpointDeco.builder() },
 
       // relational algebra projection
       { "value", ValueDecorator.builder() },

@@ -26,7 +26,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,10 +45,12 @@ import com.cloudera.flume.conf.FlumeSpecException;
 import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.conf.ReportTestingContext;
 import com.cloudera.flume.core.CompositeSink;
+import com.cloudera.flume.core.Driver;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.core.EventSource;
 import com.cloudera.flume.core.EventUtil;
+import com.cloudera.flume.core.connector.DirectDriver;
 import com.cloudera.flume.handlers.debug.MemorySinkSource;
 import com.cloudera.flume.reporter.ReportManager;
 import com.cloudera.flume.reporter.aggregator.CounterSink;
@@ -540,5 +545,143 @@ public class TestTailSource {
      * Assert.assertTrue("Saw more than 50 dupes for 1000 events",
      * (((CounterSink) sink).getCount() - 1000) < 50);
      */
+  }
+  
+  private File genTempFileWithFixedSize(int lineLength, final long count) throws IOException {
+	  File f = File.createTempFile("temp", ".tmp");
+	  f.deleteOnExit();
+
+	  StringBuilder sb = new StringBuilder();
+	  for(int i=0; i<lineLength-1; i++) {
+		  sb.append("a");
+	  }
+	  sb.append("\n");
+	  String line = sb.toString();
+	  // pre-existing file
+	  FileWriter fw = new FileWriter(f);
+	  for (int i = 0; i < count; i++) { // write 5* 30 = 150byte
+		  fw.append(sb); 
+		  fw.flush();
+	  }
+	  fw.close();
+	  
+	  return f;
+  }
+  
+  @Test
+  public void testCheckpoint() throws IOException {
+	  File f= genTempFileWithFixedSize(5, 30);
+	  
+	  TailSource src = new TailSource(2000);
+	  Cursor c = new Cursor(src.sync, f, 0, f.length(), f.lastModified(), true);
+	  src.addCursor(c);
+
+	  //
+	  EventSink snk = new CheckpointSink();
+	  
+	  src.open();
+	  try {
+		  snk.open();
+	  } catch (InterruptedException e1) {
+		  e1.printStackTrace();
+	  }
+	  
+	  try {
+		  EventUtil.dumpN(31, src, snk);
+		  ((CheckpointSink)snk).printCheckPoint();
+		  List<Event> cpEventList = ((CheckpointSink)snk).getCheckPointEvent();
+		  Assert.assertNotNull(cpEventList);
+		  Assert.assertEquals(150l, ByteBuffer.wrap(cpEventList.get(0).get(TailSource.A_TAILSRCOFFSET)).asLongBuffer().get());
+		  src.close();
+		  snk.close();
+	  } catch (InterruptedException e) {
+		  e.printStackTrace();
+	  }
+  }
+  
+  /**
+   * Short.MAX_VALUE * 7 byte 크기 테스트 
+   * 
+   * Cursor에서 nio를 이용해 파일을 읽을 때 buffer크기가 Short.MAX_VALUE이기 때문에 
+   * buffer의 크기 이상의 파일 테스트
+   * 예상결과 : buffer가 넘어 갈때마다 checkpoint event가 발생한다.그리고 마지막 파일이 
+   * 끝날 때 한개가 발생 Short.MAX_VALUE
+   * @throws IOException
+   */
+  @Test
+  public void testCheckpointOverBuffer() throws IOException {
+	  final int LINE_LENGTH = 7;
+	  
+	  File f= genTempFileWithFixedSize(LINE_LENGTH, Short.MAX_VALUE);
+	  
+	  System.out.println("file length : " + f.length());
+	  
+	  TailSource src = new TailSource(2000);
+	  Cursor c = new Cursor(src.sync, f, 0, f.length(), f.lastModified(), true);
+	  src.addCursor(c);
+
+	  //
+	  EventSink snk = new CheckpointSink();
+	  
+	  src.open();
+	  try {
+		  snk.open();
+	  } catch (InterruptedException e1) {
+		  e1.printStackTrace();
+	  }
+	  
+	  try {
+		  EventUtil.dumpN(Short.MAX_VALUE + LINE_LENGTH,  src, snk);
+		  ((CheckpointSink)snk).printCheckPoint();
+		  List<Event> cpEventList = ((CheckpointSink)snk).getCheckPointEvent();
+		  Assert.assertNotNull(cpEventList);
+		  Assert.assertEquals(LINE_LENGTH, cpEventList.size());
+		  for(int i=0; i< LINE_LENGTH; i++) {
+			  Assert.assertEquals(Short.MAX_VALUE * (i+1), ByteBuffer.wrap(cpEventList.get(i).get(TailSource.A_TAILSRCOFFSET)).asLongBuffer().get());
+		  }
+		  Assert.assertEquals(0, src.sync.size());// 더이상 읽을 Event가 없는 지 확인 Check no more event in src 
+		  src.close();
+		  snk.close();
+	  } catch (InterruptedException e) {
+		  e.printStackTrace();
+	  }
+
+  }
+  
+  static class CheckpointSink extends EventSink.Base {
+	  List<Event> checkpointEventList;
+
+	  
+	  
+	@Override
+	public void open() throws IOException, InterruptedException {
+		checkpointEventList = new ArrayList<Event>();
+		super.open();
+	}
+
+
+
+	@Override
+	public synchronized void append(Event e) throws IOException, InterruptedException {
+		if(e.get(TailSource.A_TAILSRCOFFSET) != null) {
+			checkpointEventList.add(e);
+		} else {
+			super.append(e);
+		}
+	}
+	
+	public void printCheckPoint() {
+		if(checkpointEventList != null && checkpointEventList.size() > 0) {
+			for(Event e : checkpointEventList) {
+				System.out.println("offset : " + ByteBuffer.wrap(e.get(TailSource.A_TAILSRCOFFSET)).asLongBuffer().get());
+			}
+		} else {
+			System.out.println("no event");
+		}
+	}
+	
+	public List<Event> getCheckPointEvent() {
+		return this.checkpointEventList;
+	}
   }
 }

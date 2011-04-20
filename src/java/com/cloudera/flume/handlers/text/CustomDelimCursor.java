@@ -45,14 +45,19 @@ public class CustomDelimCursor extends Cursor {
   enum DelimMode {
     INCLUDE_PREV, EXCLUDE, INCLUDE_NEXT
   };
+  
+  CustomDelimCursor(BlockingQueue<Event> sync, File f, long lastReadOffset,
+	      long lastFileLen, long lastMod, String regex, DelimMode h, boolean useCheckpoint) {
+	    super(sync, f, lastReadOffset, lastFileLen, lastMod, useCheckpoint);
+	    this.regexDelim = regex;
+	    this.pat = Pattern.compile(regex);
+	    this.delimMode = h;
 
+  }
+  
   CustomDelimCursor(BlockingQueue<Event> sync, File f, long lastReadOffset,
       long lastFileLen, long lastMod, String regex, DelimMode h) {
-    super(sync, f, lastReadOffset, lastFileLen, lastMod);
-    this.regexDelim = regex;
-    this.pat = Pattern.compile(regex);
-    this.delimMode = h;
-
+	this(sync, f, lastReadOffset, lastFileLen, lastMod, regex, h, false);
   }
 
   CustomDelimCursor(BlockingQueue<Event> sync, File f, String regex, DelimMode h) {

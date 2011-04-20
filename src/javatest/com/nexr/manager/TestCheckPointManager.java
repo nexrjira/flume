@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.cloudera.flume.agent.FlumeNode;
 import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.flume.master.FlumeMaster;
 import com.nexr.agent.cp.CheckPointManager;
@@ -147,7 +148,7 @@ public class TestCheckPointManager {
 	
 	@Test
 	public void testGetOffset() {
-		CheckPointManager manager = CheckPointManagerImpl.getInstance();
+		CheckPointManager manager = FlumeNode.getInstance().getCheckPointManager();
 		
 		Map map = manager.getOffset("agent1");
 		
@@ -160,7 +161,7 @@ public class TestCheckPointManager {
 	
 	@Test
 	public void testAddCollectorPendingList() {
-		CheckPointManager manager = CheckPointManagerImpl.getInstance();
+		CheckPointManager manager = FlumeNode.getInstance().getCheckPointManager();
 		manager.addCollectorPendingList("agent1_debug.log_00000001.20110408-121846312+0900.185924549635030");
 		manager.addCollectorPendingList("agent1_debug.log_00000001.20110408-121846312+0900.185924549635036");
 		manager.addCollectorPendingList("agent1_tx.log_00000001.20110408-121846312+0900.185924549635034");
@@ -168,7 +169,7 @@ public class TestCheckPointManager {
 	
 	@Test
 	public void testMoveToCompleteList() {
-		CheckPointManager manager = CheckPointManagerImpl.getInstance();
+		CheckPointManager manager = FlumeNode.getInstance().getCheckPointManager();
 		manager.addCollectorPendingList("agent1_debug.log_00000001.20110408-121846312+0900.185924549635030");
 		manager.addCollectorPendingList("agent1_debug.log_00000001.20110408-121846312+0900.185924549635036");
 		manager.addCollectorPendingList("agent1_tx.log_00000001.20110408-121846312+0900.185924549635034");
@@ -179,14 +180,14 @@ public class TestCheckPointManager {
 	
 	@Test
 	public void testStartServer() {
-		CheckPointManager manager = CheckPointManagerImpl.getInstance();
+		CheckPointManager manager = FlumeNode.getInstance().getCheckPointManager();
 		manager.startServer();
 	}
 	
 	@Test
 	public void testGetTagList() {
 		//total api test
-		CheckPointManager manager = CheckPointManagerImpl.getInstance();
+		CheckPointManager manager = FlumeNode.getInstance().getCheckPointManager();
 		
 		Map<String, Long> content1 = new HashMap<String, Long>();
 		content1.put("debug.log", 1010L);
@@ -223,7 +224,7 @@ public class TestCheckPointManager {
 	@Test
 	public void testGetTagList2() {
 		//total api test
-		CheckPointManager manager = CheckPointManagerImpl.getInstance();
+		CheckPointManager manager =FlumeNode.getInstance().getCheckPointManager();
 		
 		Map<String, Long> content1 = new HashMap<String, Long>();
 		content1.put("tx.log", 1010L);

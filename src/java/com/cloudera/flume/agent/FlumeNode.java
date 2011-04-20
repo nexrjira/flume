@@ -189,7 +189,7 @@ public class FlumeNode implements Reportable {
     this.sysInfo = new SystemInfo(PHYSICAL_NODE_REPORT_PREFIX
         + this.getPhysicalNodeName() + ".");
     
-    this.checkPointManager = CheckPointManagerImpl.getInstance();
+    this.checkPointManager = new CheckPointManagerImpl();
 
   }
 
@@ -301,7 +301,6 @@ public class FlumeNode implements Reportable {
       chokeMan.setDaemon(true);
       chokeMan.start();
     }
-
   }
 
   /**
@@ -831,5 +830,9 @@ public class FlumeNode implements Reportable {
 
   public FlumeVMInfo getVMInfo() {
     return vmInfo;
+  }
+
+  public CheckPointManager getCheckPointManager() {
+	return checkPointManager;
   }
 }

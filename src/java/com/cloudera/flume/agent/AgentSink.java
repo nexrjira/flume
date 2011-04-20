@@ -59,7 +59,8 @@ public class AgentSink extends EventSink.Base {
     ENDTOEND, // this does writeahead along with end-to-end acks
     // TODO (jon) maybe do acks but no writeahead
     DISK_FAILOVER, // this is equivalent to scribe's failover mechanism
-    BEST_EFFORT, // this is equivalent to syslog's best effort mechanism.
+    BEST_EFFORT, // this is equivalent to syslog's best effort mechanism. 
+    CHECKPOINT, // this is equivalent to chukwa's failover mechanism 
   };
 
   final EventSink sink;
@@ -99,6 +100,13 @@ public class AgentSink extends EventSink.Base {
           + "rpcSink(\"%s\", %d) } }  ? null>", dsthost, port);
       sink = FlumeBuilder.buildSink(ctx, snk);
       break;
+    }
+    
+    case CHECKPOINT: {
+    	String snk = String.format("{ checkpointDeco => { stubbornAppend => " 
+    			+ "{ insistentOpen => rpcSink(\"%s\", %d)} } }" , dsthost, port);
+    	sink = FlumeBuilder.buildSink(ctx, snk);
+    	break;
     }
 
     default:
@@ -158,6 +166,34 @@ public class AgentSink extends EventSink.Base {
         }
       }
     };
+  }
+  
+  public static SinkBuilder cpBuilder() {
+	  return new SinkBuilder() {
+
+		@Override
+		public EventSink build(Context context, String... argv) {
+			Preconditions.checkArgument(argv.length <= 2);
+	        FlumeConfiguration conf = FlumeConfiguration.get();
+	        String collector = conf.getCollectorHost();
+	        int port = conf.getCollectorPort();
+	        if (argv.length >= 1) {
+	          collector = argv[0];
+	        }
+
+	        if (argv.length >= 2) {
+	          port = Integer.parseInt(argv[1]);
+	        }
+	        
+	        try {
+	        	return new AgentSink(context, collector, port,
+	        			ReliabilityMode.CHECKPOINT);
+	        } catch (FlumeSpecException e) {
+	        	LOG.error("AgentSink spec error " + e, e);
+	        	throw new IllegalArgumentException();
+	        }
+		}
+	  };
   }
 
   /**

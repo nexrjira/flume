@@ -84,6 +84,7 @@ public class SourceFactoryImpl extends SourceFactory {
       { "tail", TailSource.builder() },
       { "multitail", TailSource.multiTailBuilder() },
       { "tailDir", TailDirSource.builder() },
+      { "checkpointTailDir", TailDirSource.checkPointBuilder() },
       { "seqfile", SeqfileEventSource.builder() },
       { "syslogUdp", SyslogUdpSource.builder() },
       { "syslogTcp", SyslogTcpSourceThreads.builder() },
