@@ -173,7 +173,8 @@ public class AgentSink extends EventSink.Base {
 
 		@Override
 		public EventSink build(Context context, String... argv) {
-			Preconditions.checkArgument(argv.length <= 2);
+			Preconditions.checkArgument(argv.length <= 2,
+					"usage: agentCheckpointSink[macMillis]");
 	        FlumeConfiguration conf = FlumeConfiguration.get();
 	        String collector = conf.getCollectorHost();
 	        int port = conf.getCollectorPort();

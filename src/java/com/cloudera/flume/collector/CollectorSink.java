@@ -235,8 +235,8 @@ public class CollectorSink extends EventSink.Base {
     	synchronized (rollCheckpointSet) {
     		acktags = new ArrayList<String>(rollCheckpointSet);
 			rollCheckpointSet.clear();
+			LOG.debug("Roll closed, pushing checkpoint acks for " + tag + " :: " + acktags);
 		}
-    	
     	cpManager.addCollectorCompleteList(acktags);
     }
   };
