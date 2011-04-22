@@ -53,7 +53,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	private Object sync = new Object();
 
 	CheckTagIDThread checkTagIdThread;
-
+	ServerThread serverThread;
+	
 	String collectorHost;
 
 	List<String> agentList;
@@ -112,9 +113,13 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		transport.close();
 	}
 
-	@Override
-	public void startServer() {
-		if (server == null || !server.isServing()) {
+	
+	class ServerThread extends Thread {
+		ServerThread() {
+			super("CheckManager Server");
+		}
+
+		public void run() {
 			try {
 				processor = new CheckPointService.Processor(
 						new CheckPointHandler());
@@ -128,8 +133,14 @@ public class CheckPointManagerImpl implements CheckPointManager {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		} 
-		log.info("Starting Server");
+		}
+
+	};
+	
+	@Override
+	public void startServer() {
+		serverThread = new ServerThread();
+		serverThread.start();
 	}
 	
 	@Override
@@ -165,7 +176,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	@Override
 	public Map<String, Long> getOffset(String logicalNodeName) {
 		// TODO Auto-generated method stub
-		// checkpoint 파일에서 해당 logical Node에 해당하는 파일과 offset을 전달.
+		// checkpoint �뚯씪�먯꽌 �대떦 logical Node���대떦�섎뒗 �뚯씪怨�offset���꾨떖.
 		Map<String, Long> result = new HashMap<String, Long>();
 
 		FileReader fileReader;
@@ -278,7 +289,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	}
 
 	@Override
-	// Collector에서 바로 CompleteList로 TagId를 넣으면 필요 없음.
+	// Collector�먯꽌 諛붾줈 CompleteList濡�TagId瑜��ｌ쑝硫��꾩슂 �놁쓬.
 	public void moveToCompleteList() {
 		// TODO Auto-generated method stub
 		Iterator<String> it = pendingList.iterator();
@@ -291,7 +302,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	}
 
 	@Override
-	// Collecter tagId가 있는지 확인하고 있으면 True를 전달하고 completeList에서 삭제함.
+	// Collecter tagId媛��덈뒗吏��뺤씤�섍퀬 �덉쑝硫�True瑜��꾨떖�섍퀬 completeList�먯꽌 ��젣��
 	public boolean getTagList(String tagId) {
 		// TODO Auto-generated method stub
 		boolean res = false;
@@ -310,8 +321,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 	public void checkCollectorTagID() {
 		// TODO Auto-generated method stub
-		// pendingQueue에 있는 agent의 tagId를 모두 체크 해보고
-		// 마지막 true리턴 받은 값을 기억했다가 checkpoint파일에 update한다.
+		// pendingQueue���덈뒗 agent��tagId瑜�紐⑤몢 泥댄겕 �대낫怨�
+		// 留덉�留�true由ы꽩 諛쏆� 媛믪쓣 湲곗뼲�덈떎媛�checkpoint�뚯씪��update�쒕떎.
 		boolean res = true;
 		PendingQueueModel currentTagId = null;
 		
@@ -325,7 +336,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 						currentTagId = tags.get(t);
 						log.info("Current TagID " +  currentTagId.getTagId());
 						if (res) {
-							// 현재 TagId 저장 후 리스트에서 삭제.
+							// �꾩옱 TagId ��옣 ��由ъ뒪�몄뿉����젣.
 							tags.remove(t);
 							updateCheckPointFile(agentList.get(i), currentTagId);
 						} else {
@@ -356,7 +367,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 						.getContents());
 				updateCheckPointFile(keys[i].toString(), pqm);
 				
-				//waitedTagList에서 삭제
+				//waitedTagList�먯꽌 ��젣
 				waitedTagList.remove(keys[i]);
 				agentTagMap.remove(agentName);
 			}
@@ -412,7 +423,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 					fileReader = new FileReader(ckpointFile);
 					reader = new BufferedReader(fileReader);
 
-					// 현재 체크포인트 파일을 읽어서 메모리에 저장.
+					// �꾩옱 泥댄겕�ъ씤���뚯씪���쎌뼱��硫붾え由ъ뿉 ��옣.
 					while ((line = reader.readLine()) != null) {
 						compareMap.put(
 								line.substring(0, line.indexOf(SEPERATOR))
@@ -421,7 +432,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 										line.length()).trim());
 					}
 
-					// 입력 받은 TagID의 값 입력
+					// �낅젰 諛쏆� TagID��媛��낅젰
 					for (int i = 0; i < keys.length; i++) {
 						compareMap.put(keys[i].toString(),
 								String.valueOf(res.get(keys[i])));
