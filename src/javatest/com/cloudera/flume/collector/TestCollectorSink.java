@@ -24,11 +24,17 @@ import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import junit.framework.Assert;
 
 import org.apache.log4j.Level;
 import org.junit.Before;
@@ -67,6 +73,8 @@ import com.cloudera.util.BenchmarkHarness;
 import com.cloudera.util.Clock;
 import com.cloudera.util.FileUtil;
 import com.cloudera.util.Pair;
+import com.nexr.agent.cp.CheckPointManager;
+import com.nexr.agent.cp.CheckpointDeco;
 
 /**
  * This tests the builder and makes sure we can close a collector properly when
@@ -99,7 +107,7 @@ public class TestCollectorSink {
       String src = "collectorSink";
       FlumeBuilder.buildSink(new Context(), src);
     } catch (Exception e) {
-      return;
+//      return;
     }
     assertNotNull("No exception thrown!", ex != null);
 
@@ -110,6 +118,12 @@ public class TestCollectorSink {
     // millis
     String src3 = "collectorSink(\"file:///tmp/test\", \"testfilename\", 1000)";
     FlumeBuilder.buildSink(new Context(), src3);
+    
+    String src4 = "checkpointCollectorSink(\"file:///tmp/test\", \"testfilename\")";
+    EventSink snk = FlumeBuilder.buildSink(new Context(), src4);
+    System.out.println(snk);
+    
+    
   }
 
   @Test(expected = FlumeArgException.class)
@@ -144,6 +158,13 @@ public class TestCollectorSink {
       snk.open();
       snk.close();
     }
+    
+    String src3 = "checkpointCollectorSink(\"file:///tmp/test\",\"testfilename\")";
+    for (int i = 0; i < 100; i++) {
+        EventSink snk = FlumeBuilder.buildSink(new Context(), src3);
+        snk.open();
+        snk.close();
+     }
   }
 
   /**
@@ -212,6 +233,94 @@ public class TestCollectorSink {
     inj.close();
     return ackedmem;
   }
+  
+  MemorySinkSource setupCheckpointRoll() throws IOException, InterruptedException  {
+	  MemorySinkSource cpmem = new MemorySinkSource();
+	  
+	  MockCheckpointManager mockCpManager = new MockCheckpointManager();
+	  CheckpointDeco cpDeco = new CheckpointDeco(cpmem, "tag1".getBytes(), "node1",  mockCpManager);
+	  
+	  cpDeco.open();
+	  cpDeco.append(new EventImpl("foo 1".getBytes()));
+	  cpDeco.close();
+	  
+	  cpDeco = new CheckpointDeco(cpmem, "tag2".getBytes(), "node1", mockCpManager);
+	  cpDeco.open();
+	  cpDeco.append(new EventImpl("foo 2".getBytes()));
+	  cpDeco.close();
+	  
+	  cpDeco = new CheckpointDeco(cpmem, "tag3".getBytes(), "node1", mockCpManager);
+	  cpDeco.open();
+	  cpDeco.append(new EventImpl("foo 3".getBytes()));
+	  cpDeco.close();
+	  
+	  return cpmem;
+  }
+  
+  class MockCheckpointManager implements CheckPointManager {
+	 Map<String, Map<String, Long>> pending = new HashMap<String, Map<String, Long>>();
+	 List<String> collect_pending = new ArrayList<String>();
+
+	@Override
+	public String getTagId(String agentName, String filename) {
+		return null;
+	}
+
+	@Override
+	public void startClient(String collector) {
+	}
+
+	@Override
+	public void stopClient() {
+	}
+
+	@Override
+	public Map<String, Long> getOffset(String logicalNodeName) {
+		return null;
+	}
+
+	@Override
+	public void setCollectorHost(String host) {
+	}
+
+	@Override
+	public void startTagChecker() {
+	}
+
+	@Override
+	public void stopTagChecker() {
+	}
+
+	@Override
+	public void startServer() {
+	}
+
+	@Override
+	public void addCollectorPendingList(String tagId) {
+	}
+
+	@Override
+	public void moveToCompleteList() {
+	}
+
+	@Override
+	public void addPendingQ(String tagId, String logicalNodeName,
+			Map<String, Long> tagContent) {
+		pending.put(tagId, tagContent);
+	}
+
+	@Override
+	public void addCollectorCompleteList(List<String> tagIds) {
+		collect_pending.addAll(tagIds);
+	}
+
+	@Override
+	public boolean getTagList(String tagId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	  
+  }
 
   /**
    * Construct a sink that will process the acked stream.
@@ -236,6 +345,7 @@ public class TestCollectorSink {
         coll, node.getAckChecker().getAgentAckQueuer());
     return new Pair<RollSink, EventSink>(roll, snk);
   }
+  
 
   /**
    * We need to make sure the ack doesn't get sent until the roll happens.
@@ -248,7 +358,7 @@ public class TestCollectorSink {
     // entries). This stubs that out to a call doesn't cause a file not found
     // exception.
     WALManager mockWalMan = mock(WALManager.class);
-    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null);
+    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null, null);
     FlumeNode node = FlumeNode.getInstance();
     File tmpdir = FileUtil.mktempdir();
 
@@ -316,7 +426,7 @@ public class TestCollectorSink {
     // entries). This stubs that out to a call doesn't cause a file not found
     // exception.
     WALManager mockWalMan = mock(WALManager.class);
-    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null);
+    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null, null);
     FlumeNode node = FlumeNode.getInstance();
     File tmpdir = FileUtil.mktempdir();
 
@@ -377,7 +487,7 @@ public class TestCollectorSink {
     // entries). This stubs that out to a call doesn't cause a file not found
     // exception.
     WALManager mockWalMan = mock(WALManager.class);
-    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null);
+    BenchmarkHarness.setupFlumeNode(null, mockWalMan, null, null, null, null);
     FlumeNode node = FlumeNode.getInstance();
     File tmpdir = FileUtil.mktempdir();
 
@@ -678,5 +788,55 @@ public class TestCollectorSink {
     assertEquals(1, (long) rpta.getLongMetric("foo"));
     ReportEvent rptb = ReportManager.get().getReportable("bar").getMetrics();
     assertEquals(1, (long) rptb.getLongMetric("bar"));
+  }
+  
+  @Test
+  public void testCheckpointCollectorSink() throws IOException, InterruptedException, FlumeSpecException {
+	  MockCheckpointManager cpManager = new MockCheckpointManager();
+	  BenchmarkHarness.setupFlumeNode(null, null, null, null, null, cpManager);
+	  FlumeNode node = FlumeNode.getInstance();
+	  
+	  
+	  File tmpdir = null;
+	  try {
+		  EventSource cpMem = setupCheckpointRoll();
+		  
+		  tmpdir = FileUtil.mktempdir();
+		  String snkspec = "checkpointCollectorSink(\"file:///" + tmpdir.getAbsolutePath()
+		  + "\",\"\")";
+		  CollectorSink snk = (CollectorSink) FlumeBuilder.buildSink(new Context(), snkspec);
+		  RollSink roll = snk.roller;
+		  
+		  snk.open();
+		  
+		  String tag1 = roll.getCurrentTag();
+		  LOG.info(tag1);
+		  snk.append(cpMem.next()); // cp start
+		  snk.append(cpMem.next()); // cp data
+		  snk.append(cpMem.next()); // cp end
+		  snk.append(cpMem.next()); // cp start
+		  Clock.sleep(10);
+		  roll.rotate();
+		  
+		  Assert.assertEquals(1,cpManager.collect_pending.size());
+		  snk.append(cpMem.next()); // cp data
+		  snk.append(cpMem.next()); // cp end
+		  snk.append(cpMem.next()); // cp start
+		  snk.append(cpMem.next()); // cp data
+		  snk.append(cpMem.next()); // cp end
+		  
+		  Clock.sleep(10);
+		  roll.rotate();
+		  
+		  Assert.assertEquals(3,cpManager.collect_pending.size());
+		  
+		  snk.close();
+		
+	  } finally {
+		  if(tmpdir != null) {
+			  FileUtil.rmr(tmpdir);
+		  }
+		  BenchmarkHarness.cleanupLocalWriteDir();
+	  }
   }
 }

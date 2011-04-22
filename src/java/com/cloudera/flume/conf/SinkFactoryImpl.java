@@ -38,10 +38,10 @@ import com.cloudera.flume.core.EventSinkDecorator;
 import com.cloudera.flume.core.FormatterDecorator;
 import com.cloudera.flume.core.MaskDecorator;
 import com.cloudera.flume.core.SelectDecorator;
-import com.cloudera.flume.core.extractors.RegexExtractor;
-import com.cloudera.flume.core.extractors.RegexAllExtractor;
-import com.cloudera.flume.core.extractors.SplitExtractor;
 import com.cloudera.flume.core.extractors.DateExtractor;
+import com.cloudera.flume.core.extractors.RegexAllExtractor;
+import com.cloudera.flume.core.extractors.RegexExtractor;
+import com.cloudera.flume.core.extractors.SplitExtractor;
 import com.cloudera.flume.handlers.avro.AvroEventSink;
 import com.cloudera.flume.handlers.batch.BatchingDecorator;
 import com.cloudera.flume.handlers.batch.GunzipDecorator;
@@ -87,7 +87,9 @@ import com.cloudera.flume.reporter.sampler.IntervalSampler;
 import com.cloudera.flume.reporter.sampler.ProbabilitySampler;
 import com.cloudera.flume.reporter.sampler.ReservoirSamplerDeco;
 import com.cloudera.util.Pair;
+import com.nexr.agent.cp.CheckpointChecker;
 import com.nexr.agent.cp.CheckpointDeco;
+import com.nexr.agent.cp.CheckpointRegister;
 
 /**
  * This factory builds sink and sink decorators. This implementation requires a
@@ -100,6 +102,7 @@ public class SinkFactoryImpl extends SinkFactory {
   static Object[][] sinkList = {
       // high level sinks.
       { "collectorSink", CollectorSink.hdfsBuilder() },
+      { "checkpointCollectorSink", CollectorSink.checkpointHdfsBuilder() },
 
       { "agentSink", AgentSink.e2eBuilder() },
       { "agentE2ESink", AgentSink.e2eBuilder() }, // now with acks
@@ -169,6 +172,8 @@ public class SinkFactoryImpl extends SinkFactory {
       { "stubbornAppend", StubbornAppendSink.builder() },
       
       { "checkpointDeco", CheckpointDeco.builder() },
+      { "checkpointRegister", CheckpointRegister.builder() },
+      { "checkpointChecker", CheckpointChecker.builder() },
 
       // relational algebra projection
       { "value", ValueDecorator.builder() },

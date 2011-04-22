@@ -20,19 +20,25 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeReport, ThriftFlumeReport._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("ThriftFlumeReport");
+import org.apache.thrift.*;
+import org.apache.thrift.async.*;
+import org.apache.thrift.meta_data.*;
+import org.apache.thrift.transport.*;
+import org.apache.thrift.protocol.*;
 
-  private static final org.apache.thrift.protocol.TField STRING_METRICS_FIELD_DESC = new org.apache.thrift.protocol.TField("stringMetrics", org.apache.thrift.protocol.TType.MAP, (short)3);
-  private static final org.apache.thrift.protocol.TField LONG_METRICS_FIELD_DESC = new org.apache.thrift.protocol.TField("longMetrics", org.apache.thrift.protocol.TType.MAP, (short)4);
-  private static final org.apache.thrift.protocol.TField DOUBLE_METRICS_FIELD_DESC = new org.apache.thrift.protocol.TField("doubleMetrics", org.apache.thrift.protocol.TType.MAP, (short)5);
+public class ThriftFlumeReport implements TBase<ThriftFlumeReport, ThriftFlumeReport._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("ThriftFlumeReport");
+
+  private static final TField STRING_METRICS_FIELD_DESC = new TField("stringMetrics", TType.MAP, (short)3);
+  private static final TField LONG_METRICS_FIELD_DESC = new TField("longMetrics", TType.MAP, (short)4);
+  private static final TField DOUBLE_METRICS_FIELD_DESC = new TField("doubleMetrics", TType.MAP, (short)5);
 
   public Map<String,String> stringMetrics;
   public Map<String,Long> longMetrics;
   public Map<String,Double> doubleMetrics;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-  public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+  public enum _Fields implements TFieldIdEnum {
     STRING_METRICS((short)3, "stringMetrics"),
     LONG_METRICS((short)4, "longMetrics"),
     DOUBLE_METRICS((short)5, "doubleMetrics");
@@ -97,23 +103,23 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
 
   // isset id assignments
 
-  public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+  public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
-    Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.STRING_METRICS, new org.apache.thrift.meta_data.FieldMetaData("stringMetrics", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING), 
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING))));
-    tmpMap.put(_Fields.LONG_METRICS, new org.apache.thrift.meta_data.FieldMetaData("longMetrics", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING), 
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64))));
-    tmpMap.put(_Fields.DOUBLE_METRICS, new org.apache.thrift.meta_data.FieldMetaData("doubleMetrics", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.MapMetaData(org.apache.thrift.protocol.TType.MAP, 
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING), 
-            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.DOUBLE))));
+    Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
+    tmpMap.put(_Fields.STRING_METRICS, new FieldMetaData("stringMetrics", TFieldRequirementType.DEFAULT, 
+        new MapMetaData(TType.MAP, 
+            new FieldValueMetaData(TType.STRING), 
+            new FieldValueMetaData(TType.STRING))));
+    tmpMap.put(_Fields.LONG_METRICS, new FieldMetaData("longMetrics", TFieldRequirementType.DEFAULT, 
+        new MapMetaData(TType.MAP, 
+            new FieldValueMetaData(TType.STRING), 
+            new FieldValueMetaData(TType.I64))));
+    tmpMap.put(_Fields.DOUBLE_METRICS, new FieldMetaData("doubleMetrics", TFieldRequirementType.DEFAULT, 
+        new MapMetaData(TType.MAP, 
+            new FieldValueMetaData(TType.STRING), 
+            new FieldValueMetaData(TType.DOUBLE))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(ThriftFlumeReport.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(ThriftFlumeReport.class, metaDataMap);
   }
 
   public ThriftFlumeReport() {
@@ -216,7 +222,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     this.stringMetrics = null;
   }
 
-  /** Returns true if field stringMetrics is set (has been assigned a value) and false otherwise */
+  /** Returns true if field stringMetrics is set (has been asigned a value) and false otherwise */
   public boolean isSetStringMetrics() {
     return this.stringMetrics != null;
   }
@@ -251,7 +257,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     this.longMetrics = null;
   }
 
-  /** Returns true if field longMetrics is set (has been assigned a value) and false otherwise */
+  /** Returns true if field longMetrics is set (has been asigned a value) and false otherwise */
   public boolean isSetLongMetrics() {
     return this.longMetrics != null;
   }
@@ -286,7 +292,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     this.doubleMetrics = null;
   }
 
-  /** Returns true if field doubleMetrics is set (has been assigned a value) and false otherwise */
+  /** Returns true if field doubleMetrics is set (has been asigned a value) and false otherwise */
   public boolean isSetDoubleMetrics() {
     return this.doubleMetrics != null;
   }
@@ -341,7 +347,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     throw new IllegalStateException();
   }
 
-  /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+  /** Returns true if field corresponding to fieldID is set (has been asigned a value) and false otherwise */
   public boolean isSet(_Fields field) {
     if (field == null) {
       throw new IllegalArgumentException();
@@ -419,7 +425,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
       return lastComparison;
     }
     if (isSetStringMetrics()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.stringMetrics, typedOther.stringMetrics);
+      lastComparison = TBaseHelper.compareTo(this.stringMetrics, typedOther.stringMetrics);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -429,7 +435,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
       return lastComparison;
     }
     if (isSetLongMetrics()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.longMetrics, typedOther.longMetrics);
+      lastComparison = TBaseHelper.compareTo(this.longMetrics, typedOther.longMetrics);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -439,7 +445,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
       return lastComparison;
     }
     if (isSetDoubleMetrics()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.doubleMetrics, typedOther.doubleMetrics);
+      lastComparison = TBaseHelper.compareTo(this.doubleMetrics, typedOther.doubleMetrics);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -451,20 +457,20 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     return _Fields.findByThriftId(fieldId);
   }
 
-  public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
-    org.apache.thrift.protocol.TField field;
+  public void read(TProtocol iprot) throws TException {
+    TField field;
     iprot.readStructBegin();
     while (true)
     {
       field = iprot.readFieldBegin();
-      if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+      if (field.type == TType.STOP) { 
         break;
       }
       switch (field.id) {
         case 3: // STRING_METRICS
-          if (field.type == org.apache.thrift.protocol.TType.MAP) {
+          if (field.type == TType.MAP) {
             {
-              org.apache.thrift.protocol.TMap _map0 = iprot.readMapBegin();
+              TMap _map0 = iprot.readMapBegin();
               this.stringMetrics = new HashMap<String,String>(2*_map0.size);
               for (int _i1 = 0; _i1 < _map0.size; ++_i1)
               {
@@ -477,13 +483,13 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
               iprot.readMapEnd();
             }
           } else { 
-            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            TProtocolUtil.skip(iprot, field.type);
           }
           break;
         case 4: // LONG_METRICS
-          if (field.type == org.apache.thrift.protocol.TType.MAP) {
+          if (field.type == TType.MAP) {
             {
-              org.apache.thrift.protocol.TMap _map4 = iprot.readMapBegin();
+              TMap _map4 = iprot.readMapBegin();
               this.longMetrics = new HashMap<String,Long>(2*_map4.size);
               for (int _i5 = 0; _i5 < _map4.size; ++_i5)
               {
@@ -496,13 +502,13 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
               iprot.readMapEnd();
             }
           } else { 
-            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            TProtocolUtil.skip(iprot, field.type);
           }
           break;
         case 5: // DOUBLE_METRICS
-          if (field.type == org.apache.thrift.protocol.TType.MAP) {
+          if (field.type == TType.MAP) {
             {
-              org.apache.thrift.protocol.TMap _map8 = iprot.readMapBegin();
+              TMap _map8 = iprot.readMapBegin();
               this.doubleMetrics = new HashMap<String,Double>(2*_map8.size);
               for (int _i9 = 0; _i9 < _map8.size; ++_i9)
               {
@@ -515,11 +521,11 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
               iprot.readMapEnd();
             }
           } else { 
-            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            TProtocolUtil.skip(iprot, field.type);
           }
           break;
         default:
-          org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+          TProtocolUtil.skip(iprot, field.type);
       }
       iprot.readFieldEnd();
     }
@@ -529,14 +535,14 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     validate();
   }
 
-  public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+  public void write(TProtocol oprot) throws TException {
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
     if (this.stringMetrics != null) {
       oprot.writeFieldBegin(STRING_METRICS_FIELD_DESC);
       {
-        oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.STRING, this.stringMetrics.size()));
+        oprot.writeMapBegin(new TMap(TType.STRING, TType.STRING, this.stringMetrics.size()));
         for (Map.Entry<String, String> _iter12 : this.stringMetrics.entrySet())
         {
           oprot.writeString(_iter12.getKey());
@@ -549,7 +555,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     if (this.longMetrics != null) {
       oprot.writeFieldBegin(LONG_METRICS_FIELD_DESC);
       {
-        oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.I64, this.longMetrics.size()));
+        oprot.writeMapBegin(new TMap(TType.STRING, TType.I64, this.longMetrics.size()));
         for (Map.Entry<String, Long> _iter13 : this.longMetrics.entrySet())
         {
           oprot.writeString(_iter13.getKey());
@@ -562,7 +568,7 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     if (this.doubleMetrics != null) {
       oprot.writeFieldBegin(DOUBLE_METRICS_FIELD_DESC);
       {
-        oprot.writeMapBegin(new org.apache.thrift.protocol.TMap(org.apache.thrift.protocol.TType.STRING, org.apache.thrift.protocol.TType.DOUBLE, this.doubleMetrics.size()));
+        oprot.writeMapBegin(new TMap(TType.STRING, TType.DOUBLE, this.doubleMetrics.size()));
         for (Map.Entry<String, Double> _iter14 : this.doubleMetrics.entrySet())
         {
           oprot.writeString(_iter14.getKey());
@@ -608,24 +614,8 @@ public class ThriftFlumeReport implements org.apache.thrift.TBase<ThriftFlumeRep
     return sb.toString();
   }
 
-  public void validate() throws org.apache.thrift.TException {
+  public void validate() throws TException {
     // check for required fields
-  }
-
-  private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-    try {
-      write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-    } catch (org.apache.thrift.TException te) {
-      throw new java.io.IOException(te);
-    }
-  }
-
-  private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-    try {
-      read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-    } catch (org.apache.thrift.TException te) {
-      throw new java.io.IOException(te);
-    }
   }
 
 }

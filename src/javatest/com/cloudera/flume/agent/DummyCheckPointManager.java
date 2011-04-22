@@ -28,12 +28,6 @@ public class DummyCheckPointManager implements CheckPointManager {
 	}
 
 	@Override
-	public void addPendingQ(String tagId, Map<String, Long> tagContent) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public Map<String, Long> getOffset(String logicalNodeName) {
 		return checkPointMap;
 	}
@@ -74,13 +68,23 @@ public class DummyCheckPointManager implements CheckPointManager {
 		
 	}
 
-	@Override
-	public List<String> getTagList(String agentName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
 	public void setCheckPointMap(Map<String, Long> checkPointMap) {
 		this.checkPointMap = checkPointMap;
+	}
+
+	@Override
+	public void addPendingQ(String tagId, String logicalNodeName,
+			Map<String, Long> tagContent) {
+	}
+
+	@Override
+	public void addCollectorCompleteList(List<String> tagIds) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public boolean getTagList(String tagId) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

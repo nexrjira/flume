@@ -14,6 +14,7 @@ import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.reporter.aggregator.AccumulatorSink;
+import com.cloudera.util.Clock;
 
 public class TestCheckpointDeco {
 
@@ -24,13 +25,10 @@ public class TestCheckpointDeco {
 	
 	@Test
 	public void testCheckpointEvent() throws IOException, InterruptedException {
-//		EventSink msnk = mock(EventSink.class);
 		MemorySink snk = new MemorySink("sink");
 		CheckPointManager manager = mock(CheckPointManagerImpl.class);
 		
-		final String TAG_ID = "tag1";
-		
-		CheckpointDeco deco = new CheckpointDeco(snk, TAG_ID.getBytes(), manager);
+		CheckpointDeco deco = new CheckpointDeco(snk, "node1", manager, 10000l);
 		
 		deco.open();
 		
@@ -45,13 +43,30 @@ public class TestCheckpointDeco {
  		byte[] type = startEvent.get(CheckpointDeco.ATTR_CK_TYPE);
  		Assert.assertEquals(new String(CheckpointDeco.CK_START), new String(type));
  		byte[] tag = startEvent.get(CheckpointDeco.ATTR_CK_TAG);
- 		Assert.assertEquals(TAG_ID, new String(tag));
+ 		Assert.assertEquals(new String(deco.tag), new String(tag));
  		
  		Event endEvent = snk.eventList.get(2);
  		type = endEvent.get(CheckpointDeco.ATTR_CK_TYPE);
  		Assert.assertEquals(new String(CheckpointDeco.CK_END), new String(type));
  		tag = endEvent.get(CheckpointDeco.ATTR_CK_TAG);
- 		Assert.assertEquals(TAG_ID, new String(tag));
+ 		Assert.assertEquals(new String(deco.tag), new String(tag));
+	}
+	
+	@Test
+	public void testRotate() throws IOException, InterruptedException {
+		MemorySink snk = new MemorySink("sink");
+		CheckPointManager manager = mock(CheckPointManagerImpl.class);
+		
+		CheckpointDeco deco = new CheckpointDeco(snk, "node1", manager, 2000l);
+		
+		deco.open(); // -> startEvent
+		deco.append(new EventImpl()); // -> dataEvent
+		Clock.sleep(3000l); // sleep 3 sec -> rotate (end->start)
+		deco.append(new EventImpl());// -> dataEvent
+		deco.append(new EventImpl());// -> dataEvent
+		deco.close(); // ->endEvent
+		
+		Assert.assertEquals(7, snk.getCount());
 	}
 	
 	class MemorySink extends AccumulatorSink {

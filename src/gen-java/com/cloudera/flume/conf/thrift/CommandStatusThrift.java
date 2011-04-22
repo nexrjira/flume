@@ -20,13 +20,19 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatusThrift, CommandStatusThrift._Fields>, java.io.Serializable, Cloneable {
-  private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("CommandStatusThrift");
+import org.apache.thrift.*;
+import org.apache.thrift.async.*;
+import org.apache.thrift.meta_data.*;
+import org.apache.thrift.transport.*;
+import org.apache.thrift.protocol.*;
 
-  private static final org.apache.thrift.protocol.TField CMD_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("cmdId", org.apache.thrift.protocol.TType.I64, (short)1);
-  private static final org.apache.thrift.protocol.TField STATE_FIELD_DESC = new org.apache.thrift.protocol.TField("state", org.apache.thrift.protocol.TType.STRING, (short)2);
-  private static final org.apache.thrift.protocol.TField MESSAGE_FIELD_DESC = new org.apache.thrift.protocol.TField("message", org.apache.thrift.protocol.TType.STRING, (short)3);
-  private static final org.apache.thrift.protocol.TField CMD_FIELD_DESC = new org.apache.thrift.protocol.TField("cmd", org.apache.thrift.protocol.TType.STRUCT, (short)4);
+public class CommandStatusThrift implements TBase<CommandStatusThrift, CommandStatusThrift._Fields>, java.io.Serializable, Cloneable {
+  private static final TStruct STRUCT_DESC = new TStruct("CommandStatusThrift");
+
+  private static final TField CMD_ID_FIELD_DESC = new TField("cmdId", TType.I64, (short)1);
+  private static final TField STATE_FIELD_DESC = new TField("state", TType.STRING, (short)2);
+  private static final TField MESSAGE_FIELD_DESC = new TField("message", TType.STRING, (short)3);
+  private static final TField CMD_FIELD_DESC = new TField("cmd", TType.STRUCT, (short)4);
 
   public long cmdId;
   public String state;
@@ -34,7 +40,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
   public FlumeMasterCommandThrift cmd;
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
-  public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+  public enum _Fields implements TFieldIdEnum {
     CMD_ID((short)1, "cmdId"),
     STATE((short)2, "state"),
     MESSAGE((short)3, "message"),
@@ -104,19 +110,19 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
   private static final int __CMDID_ISSET_ID = 0;
   private BitSet __isset_bit_vector = new BitSet(1);
 
-  public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+  public static final Map<_Fields, FieldMetaData> metaDataMap;
   static {
-    Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.CMD_ID, new org.apache.thrift.meta_data.FieldMetaData("cmdId", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64)));
-    tmpMap.put(_Fields.STATE, new org.apache.thrift.meta_data.FieldMetaData("state", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.MESSAGE, new org.apache.thrift.meta_data.FieldMetaData("message", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.CMD, new org.apache.thrift.meta_data.FieldMetaData("cmd", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, FlumeMasterCommandThrift.class)));
+    Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
+    tmpMap.put(_Fields.CMD_ID, new FieldMetaData("cmdId", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.I64)));
+    tmpMap.put(_Fields.STATE, new FieldMetaData("state", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.MESSAGE, new FieldMetaData("message", TFieldRequirementType.DEFAULT, 
+        new FieldValueMetaData(TType.STRING)));
+    tmpMap.put(_Fields.CMD, new FieldMetaData("cmd", TFieldRequirementType.DEFAULT, 
+        new StructMetaData(TType.STRUCT, FlumeMasterCommandThrift.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
-    org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(CommandStatusThrift.class, metaDataMap);
+    FieldMetaData.addStructMetaDataMap(CommandStatusThrift.class, metaDataMap);
   }
 
   public CommandStatusThrift() {
@@ -181,7 +187,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
     __isset_bit_vector.clear(__CMDID_ISSET_ID);
   }
 
-  /** Returns true if field cmdId is set (has been assigned a value) and false otherwise */
+  /** Returns true if field cmdId is set (has been asigned a value) and false otherwise */
   public boolean isSetCmdId() {
     return __isset_bit_vector.get(__CMDID_ISSET_ID);
   }
@@ -203,7 +209,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
     this.state = null;
   }
 
-  /** Returns true if field state is set (has been assigned a value) and false otherwise */
+  /** Returns true if field state is set (has been asigned a value) and false otherwise */
   public boolean isSetState() {
     return this.state != null;
   }
@@ -227,7 +233,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
     this.message = null;
   }
 
-  /** Returns true if field message is set (has been assigned a value) and false otherwise */
+  /** Returns true if field message is set (has been asigned a value) and false otherwise */
   public boolean isSetMessage() {
     return this.message != null;
   }
@@ -251,7 +257,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
     this.cmd = null;
   }
 
-  /** Returns true if field cmd is set (has been assigned a value) and false otherwise */
+  /** Returns true if field cmd is set (has been asigned a value) and false otherwise */
   public boolean isSetCmd() {
     return this.cmd != null;
   }
@@ -317,7 +323,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
     throw new IllegalStateException();
   }
 
-  /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+  /** Returns true if field corresponding to fieldID is set (has been asigned a value) and false otherwise */
   public boolean isSet(_Fields field) {
     if (field == null) {
       throw new IllegalArgumentException();
@@ -406,7 +412,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
       return lastComparison;
     }
     if (isSetCmdId()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cmdId, typedOther.cmdId);
+      lastComparison = TBaseHelper.compareTo(this.cmdId, typedOther.cmdId);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -416,7 +422,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
       return lastComparison;
     }
     if (isSetState()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.state, typedOther.state);
+      lastComparison = TBaseHelper.compareTo(this.state, typedOther.state);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -426,7 +432,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
       return lastComparison;
     }
     if (isSetMessage()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.message, typedOther.message);
+      lastComparison = TBaseHelper.compareTo(this.message, typedOther.message);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -436,7 +442,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
       return lastComparison;
     }
     if (isSetCmd()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.cmd, typedOther.cmd);
+      lastComparison = TBaseHelper.compareTo(this.cmd, typedOther.cmd);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -448,48 +454,48 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
     return _Fields.findByThriftId(fieldId);
   }
 
-  public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
-    org.apache.thrift.protocol.TField field;
+  public void read(TProtocol iprot) throws TException {
+    TField field;
     iprot.readStructBegin();
     while (true)
     {
       field = iprot.readFieldBegin();
-      if (field.type == org.apache.thrift.protocol.TType.STOP) { 
+      if (field.type == TType.STOP) { 
         break;
       }
       switch (field.id) {
         case 1: // CMD_ID
-          if (field.type == org.apache.thrift.protocol.TType.I64) {
+          if (field.type == TType.I64) {
             this.cmdId = iprot.readI64();
             setCmdIdIsSet(true);
           } else { 
-            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            TProtocolUtil.skip(iprot, field.type);
           }
           break;
         case 2: // STATE
-          if (field.type == org.apache.thrift.protocol.TType.STRING) {
+          if (field.type == TType.STRING) {
             this.state = iprot.readString();
           } else { 
-            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            TProtocolUtil.skip(iprot, field.type);
           }
           break;
         case 3: // MESSAGE
-          if (field.type == org.apache.thrift.protocol.TType.STRING) {
+          if (field.type == TType.STRING) {
             this.message = iprot.readString();
           } else { 
-            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            TProtocolUtil.skip(iprot, field.type);
           }
           break;
         case 4: // CMD
-          if (field.type == org.apache.thrift.protocol.TType.STRUCT) {
+          if (field.type == TType.STRUCT) {
             this.cmd = new FlumeMasterCommandThrift();
             this.cmd.read(iprot);
           } else { 
-            org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+            TProtocolUtil.skip(iprot, field.type);
           }
           break;
         default:
-          org.apache.thrift.protocol.TProtocolUtil.skip(iprot, field.type);
+          TProtocolUtil.skip(iprot, field.type);
       }
       iprot.readFieldEnd();
     }
@@ -499,7 +505,7 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
     validate();
   }
 
-  public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+  public void write(TProtocol oprot) throws TException {
     validate();
 
     oprot.writeStructBegin(STRUCT_DESC);
@@ -561,26 +567,8 @@ public class CommandStatusThrift implements org.apache.thrift.TBase<CommandStatu
     return sb.toString();
   }
 
-  public void validate() throws org.apache.thrift.TException {
+  public void validate() throws TException {
     // check for required fields
-  }
-
-  private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-    try {
-      write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
-    } catch (org.apache.thrift.TException te) {
-      throw new java.io.IOException(te);
-    }
-  }
-
-  private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-    try {
-      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-      __isset_bit_vector = new BitSet(1);
-      read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
-    } catch (org.apache.thrift.TException te) {
-      throw new java.io.IOException(te);
-    }
   }
 
 }

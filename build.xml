@@ -373,7 +373,7 @@ to call at top-level: ant deploy-contrib compile-core-test
   <!-- ========================== -->
   <target name="call-thrift">
 		<echo message="Running thrift on ${thriftfile}"/>
-    <exec executable="thrift" dir="${basedir}" failonerror="true">
+    <exec executable="C:/thrift/thrift.exe" dir="${basedir}" failonerror="true">
       <arg line="--strict --gen java -o src ${thriftfile}"/>
     </exec>
   </target>
@@ -454,7 +454,8 @@ to call at top-level: ant deploy-contrib compile-core-test
 
   </target>
 
-  <target name="compile-core" depends="init,version,ivy-retrieve,compile-gen">
+  <!--<target name="compile-core" depends="init,version,ivy-retrieve,compile-gen">-->
+  <target name="compile-core" depends="init,ivy-retrieve,compile-gen">
 
     <!-- Compile Java files (excluding JSPs) checking warnings -->
     <javac 
