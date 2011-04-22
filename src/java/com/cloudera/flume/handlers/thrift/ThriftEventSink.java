@@ -30,6 +30,7 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.cloudera.flume.agent.FlumeNode;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.flume.conf.SinkFactory.SinkBuilder;
@@ -38,6 +39,7 @@ import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.handlers.thrift.ThriftFlumeEventServer.Client;
 import com.cloudera.flume.reporter.ReportEvent;
+import com.nexr.agent.cp.CheckPointManager;
 
 /**
  * This is a sink that sends events to a remote host/port using Thrift.
@@ -56,9 +58,17 @@ public class ThriftEventSink extends EventSink.Base {
   TTransport transport;
   TStatsTransport stats;
   boolean nonblocking;
+  boolean useCheckpoint;
 
   AtomicLong sentBytes = new AtomicLong();
 
+  public ThriftEventSink(String host, int port, boolean nonblocking, boolean useCheckpoint) {
+	this.host = host;
+	this.port = port;
+	this.nonblocking = nonblocking;
+	this.useCheckpoint = useCheckpoint;
+  }
+  
   public ThriftEventSink(String host, int port, boolean nonblocking) {
     this.host = host;
     this.port = port;
@@ -88,6 +98,7 @@ public class ThriftEventSink extends EventSink.Base {
       transport = null;
       LOG.info("ThriftEventSink on port " + port + " closed");
     }
+    FlumeNode.getInstance().getCheckPointManager().stopClient();
   }
 
   @Override
@@ -115,6 +126,8 @@ public class ThriftEventSink extends EventSink.Base {
       throw new IOException("Failed to open thrift event sink at " + host + ":"
           + port + " : " + e.getMessage());
     }
+    FlumeNode.getInstance().getCheckPointManager().setCollectorHost(host);
+    FlumeNode.getInstance().getCheckPointManager().startTagChecker();
   }
 
   @Override
@@ -156,5 +169,26 @@ public class ThriftEventSink extends EventSink.Base {
         return new ThriftEventSink(host, port);
       }
     };
+  }
+  
+  public static SinkBuilder cPbuilder() {
+	  return new SinkBuilder() {
+		@Override
+		public EventSink build(Context context, String... args) {
+			if (args.length > 2) {
+				throw new IllegalArgumentException(
+					"usage: checkpointThriftSink([hostname, [portno]]) ");
+			}
+	        String host = FlumeConfiguration.get().getCollectorHost();
+	        int port = FlumeConfiguration.get().getCollectorPort();
+	        if (args.length >= 1) {
+	          host = args[0];
+	        }
+	        if (args.length >= 2) {
+	          port = Integer.parseInt(args[1]);
+	        }
+	        return new ThriftEventSink(host, port, false, true);
+		}
+	  };
   }
 }

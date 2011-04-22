@@ -238,18 +238,18 @@ public class TestCollectorSink {
 	  MemorySinkSource cpmem = new MemorySinkSource();
 	  
 	  MockCheckpointManager mockCpManager = new MockCheckpointManager();
-	  CheckpointDeco cpDeco = new CheckpointDeco(cpmem, "tag1".getBytes(), "node1",  mockCpManager);
+	  CheckpointDeco cpDeco = new CheckpointDeco(cpmem, "node1",  mockCpManager, 10000l);
 	  
 	  cpDeco.open();
 	  cpDeco.append(new EventImpl("foo 1".getBytes()));
 	  cpDeco.close();
 	  
-	  cpDeco = new CheckpointDeco(cpmem, "tag2".getBytes(), "node1", mockCpManager);
+	  cpDeco = new CheckpointDeco(cpmem, "node1", mockCpManager, 10000l);
 	  cpDeco.open();
 	  cpDeco.append(new EventImpl("foo 2".getBytes()));
 	  cpDeco.close();
 	  
-	  cpDeco = new CheckpointDeco(cpmem, "tag3".getBytes(), "node1", mockCpManager);
+	  cpDeco = new CheckpointDeco(cpmem, "node1", mockCpManager, 10000l);
 	  cpDeco.open();
 	  cpDeco.append(new EventImpl("foo 3".getBytes()));
 	  cpDeco.close();

@@ -138,9 +138,11 @@ public class SinkFactoryImpl extends SinkFactory {
       { "escapedCustomDfs", EscapedCustomDfsSink.builder() }, // escapes
       { "rpcSink", RpcSink.builder() }, // creates AvroEventSink or
       // ThriftEventSink
+      { "checkpointRpcSink", RpcSink.cpBuilder() },
       { "syslogTcp", SyslogTcpSink.builder() },
       { "irc", IrcSink.builder() },
       { "thriftSink", ThriftEventSink.builder() },
+      { "checkpoinThriftSink", ThriftEventSink.cPbuilder() },
       { "avroSink", AvroEventSink.builder() },
       // advanced
       { "failChain", FailoverChainSink.builder() }, // @deprecated

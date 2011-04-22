@@ -120,7 +120,7 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 			@Override
 			public EventSinkDecorator<EventSink> build(Context context,
 					String... argv) {
-				Preconditions.checkArgument(argv.length <= 1, "usage: checkpointInjector[(maxMillis)]");
+				Preconditions.checkArgument(argv.length <= 1, "usage: checkpointInjector[(collector, maxMillis)]");
 				Preconditions.checkNotNull(context.getValue(LogicalNodeContext.C_LOGICAL),
 						"Context does not have a logical node name");
 				

@@ -54,6 +54,18 @@ public class CheckpointChecker<S extends EventSink> extends
 	}
 
 	@Override
+	public void close() throws IOException, InterruptedException {
+		//TODO checkpoint stop Server
+		super.close();
+	}
+
+	@Override
+	public void open() throws IOException, InterruptedException {
+		FlumeNode.getInstance().getCheckPointManager().startServer();
+		super.open();
+	}
+
+	@Override
 	public void append(Event e) throws IOException, InterruptedException {
 		byte[] btyp = e.get(CheckpointDeco.ATTR_CK_TYPE);
 		

@@ -74,4 +74,41 @@ public class RpcSink extends EventSink.Base {
       }
     };
   }
+  
+  public static SinkBuilder cpBuilder() {
+	  return new SinkBuilder() {
+
+		@Override
+		public EventSink build(Context context, String... args) {
+	        if (args.length > 2) {
+	            throw new IllegalArgumentException(
+	                "usage: checkpointRpcSink([hostname, [portno]]) ");
+	          }
+	          String host = FlumeConfiguration.get().getCollectorHost();
+	          int port = FlumeConfiguration.get().getCollectorPort();
+	          if (args.length >= 1) {
+	            host = args[0];
+	          }
+
+	          if (args.length >= 2) {
+	            port = Integer.parseInt(args[1]);
+	          }
+	          /*
+	           * I am hoping here that master calls this builder and at that time the
+	           * FlumeConfiguration is all set.
+	           */
+	          if (FlumeConfiguration.get().getEventRPC().equals(
+	              FlumeConfiguration.RPC_TYPE_THRIFT)) {
+	            return new ThriftEventSink(host, port, false, true);
+	          }
+	          if (FlumeConfiguration.get().getEventRPC().equals(
+	              FlumeConfiguration.RPC_TYPE_AVRO)) {
+	            return new AvroEventSink(host, port);
+	          }
+	          LOG.warn("event.rpc.type not defined.  It should be either"
+	              + " \"THRIFT\" or \"AVRO\". Defaulting to Thrift");
+	          return new ThriftEventSink(host, port, false, true);
+		}
+	  };
+  }
 }

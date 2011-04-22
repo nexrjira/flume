@@ -104,7 +104,7 @@ public class AgentSink extends EventSink.Base {
     
     case CHECKPOINT: {
     	String snk = String.format("{ checkpointDeco => { stubbornAppend => " 
-    			+ "{ insistentOpen => rpcSink(\"%s\", %d)} } }" , dsthost, port);
+    			+ "{ insistentOpen => checkpointRpcSink(\"%s\", %d)} } }" , dsthost, port);
     	sink = FlumeBuilder.buildSink(ctx, snk);
     	break;
     }
