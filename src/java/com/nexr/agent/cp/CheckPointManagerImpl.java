@@ -84,7 +84,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		completeList = new ArrayList<String>();
 	}
 
-	
+	@Override
 	public void startClient(String collector) {
 		// TODO Auto-generated method stub
 		// CheckPoint Thrift client
@@ -141,11 +141,6 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	public void startServer() {
 		serverThread = new ServerThread();
 		serverThread.start();
-	}
-	
-	@Override
-	public void stopServer() {
-		server.stop();
 	}
 
 	@Override

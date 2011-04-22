@@ -93,7 +93,6 @@ public class DFSEventSink extends EventSink.Base {
     Preconditions.checkState(w != null,
         "Attempted to append to a null dfs writer!");
     w.append(new WriteableEventKey(e), new WriteableEvent(e));
-    
     super.append(e);
   }
 

@@ -30,7 +30,7 @@ public class CheckPointService {
 
   public interface Iface {
 
-    public boolean checkTagId(String agentName) throws TException;
+    public List<String> checkTagId(String agentName) throws TException;
 
   }
 
@@ -77,7 +77,7 @@ public class CheckPointService {
       return this.oprot_;
     }
 
-    public boolean checkTagId(String agentName) throws TException
+    public List<String> checkTagId(String agentName) throws TException
     {
       send_checkTagId(agentName);
       return recv_checkTagId();
@@ -93,7 +93,7 @@ public class CheckPointService {
       oprot_.getTransport().flush();
     }
 
-    public boolean recv_checkTagId() throws TException
+    public List<String> recv_checkTagId() throws TException
     {
       TMessage msg = iprot_.readMessageBegin();
       if (msg.type == TMessageType.EXCEPTION) {
@@ -152,7 +152,7 @@ public class CheckPointService {
         prot.writeMessageEnd();
       }
 
-      public boolean getResult() throws TException {
+      public List<String> getResult() throws TException {
         if (getState() != State.RESPONSE_READ) {
           throw new IllegalStateException("Method call not finished!");
         }
@@ -215,7 +215,6 @@ public class CheckPointService {
         iprot.readMessageEnd();
         checkTagId_result result = new checkTagId_result();
         result.success = iface_.checkTagId(args.agentName);
-        result.setSuccessIsSet(true);
         oprot.writeMessageBegin(new TMessage("checkTagId", TMessageType.REPLY, seqid));
         result.write(oprot);
         oprot.writeMessageEnd();
@@ -510,9 +509,9 @@ public class CheckPointService {
   public static class checkTagId_result implements TBase<checkTagId_result, checkTagId_result._Fields>, java.io.Serializable, Cloneable   {
     private static final TStruct STRUCT_DESC = new TStruct("checkTagId_result");
 
-    private static final TField SUCCESS_FIELD_DESC = new TField("success", TType.BOOL, (short)0);
+    private static final TField SUCCESS_FIELD_DESC = new TField("success", TType.LIST, (short)0);
 
-    public boolean success;
+    public List<String> success;
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements TFieldIdEnum {
@@ -573,14 +572,13 @@ public class CheckPointService {
     }
 
     // isset id assignments
-    private static final int __SUCCESS_ISSET_ID = 0;
-    private BitSet __isset_bit_vector = new BitSet(1);
 
     public static final Map<_Fields, FieldMetaData> metaDataMap;
     static {
       Map<_Fields, FieldMetaData> tmpMap = new EnumMap<_Fields, FieldMetaData>(_Fields.class);
       tmpMap.put(_Fields.SUCCESS, new FieldMetaData("success", TFieldRequirementType.DEFAULT, 
-          new FieldValueMetaData(TType.BOOL)));
+          new ListMetaData(TType.LIST, 
+              new FieldValueMetaData(TType.STRING))));
       metaDataMap = Collections.unmodifiableMap(tmpMap);
       FieldMetaData.addStructMetaDataMap(checkTagId_result.class, metaDataMap);
     }
@@ -589,20 +587,23 @@ public class CheckPointService {
     }
 
     public checkTagId_result(
-      boolean success)
+      List<String> success)
     {
       this();
       this.success = success;
-      setSuccessIsSet(true);
     }
 
     /**
      * Performs a deep copy on <i>other</i>.
      */
     public checkTagId_result(checkTagId_result other) {
-      __isset_bit_vector.clear();
-      __isset_bit_vector.or(other.__isset_bit_vector);
-      this.success = other.success;
+      if (other.isSetSuccess()) {
+        List<String> __this__success = new ArrayList<String>();
+        for (String other_element : other.success) {
+          __this__success.add(other_element);
+        }
+        this.success = __this__success;
+      }
     }
 
     public checkTagId_result deepCopy() {
@@ -611,31 +612,46 @@ public class CheckPointService {
 
     @Override
     public void clear() {
-      setSuccessIsSet(false);
-      this.success = false;
+      this.success = null;
     }
 
-    public boolean isSuccess() {
+    public int getSuccessSize() {
+      return (this.success == null) ? 0 : this.success.size();
+    }
+
+    public java.util.Iterator<String> getSuccessIterator() {
+      return (this.success == null) ? null : this.success.iterator();
+    }
+
+    public void addToSuccess(String elem) {
+      if (this.success == null) {
+        this.success = new ArrayList<String>();
+      }
+      this.success.add(elem);
+    }
+
+    public List<String> getSuccess() {
       return this.success;
     }
 
-    public checkTagId_result setSuccess(boolean success) {
+    public checkTagId_result setSuccess(List<String> success) {
       this.success = success;
-      setSuccessIsSet(true);
       return this;
     }
 
     public void unsetSuccess() {
-      __isset_bit_vector.clear(__SUCCESS_ISSET_ID);
+      this.success = null;
     }
 
     /** Returns true if field success is set (has been asigned a value) and false otherwise */
     public boolean isSetSuccess() {
-      return __isset_bit_vector.get(__SUCCESS_ISSET_ID);
+      return this.success != null;
     }
 
     public void setSuccessIsSet(boolean value) {
-      __isset_bit_vector.set(__SUCCESS_ISSET_ID, value);
+      if (!value) {
+        this.success = null;
+      }
     }
 
     public void setFieldValue(_Fields field, Object value) {
@@ -644,7 +660,7 @@ public class CheckPointService {
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((Boolean)value);
+          setSuccess((List<String>)value);
         }
         break;
 
@@ -654,7 +670,7 @@ public class CheckPointService {
     public Object getFieldValue(_Fields field) {
       switch (field) {
       case SUCCESS:
-        return new Boolean(isSuccess());
+        return getSuccess();
 
       }
       throw new IllegalStateException();
@@ -686,12 +702,12 @@ public class CheckPointService {
       if (that == null)
         return false;
 
-      boolean this_present_success = true;
-      boolean that_present_success = true;
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
       if (this_present_success || that_present_success) {
         if (!(this_present_success && that_present_success))
           return false;
-        if (this.success != that.success)
+        if (!this.success.equals(that.success))
           return false;
       }
 
@@ -739,9 +755,18 @@ public class CheckPointService {
         }
         switch (field.id) {
           case 0: // SUCCESS
-            if (field.type == TType.BOOL) {
-              this.success = iprot.readBool();
-              setSuccessIsSet(true);
+            if (field.type == TType.LIST) {
+              {
+                TList _list0 = iprot.readListBegin();
+                this.success = new ArrayList<String>(_list0.size);
+                for (int _i1 = 0; _i1 < _list0.size; ++_i1)
+                {
+                  String _elem2;
+                  _elem2 = iprot.readString();
+                  this.success.add(_elem2);
+                }
+                iprot.readListEnd();
+              }
             } else { 
               TProtocolUtil.skip(iprot, field.type);
             }
@@ -762,7 +787,14 @@ public class CheckPointService {
 
       if (this.isSetSuccess()) {
         oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-        oprot.writeBool(this.success);
+        {
+          oprot.writeListBegin(new TList(TType.STRING, this.success.size()));
+          for (String _iter3 : this.success)
+          {
+            oprot.writeString(_iter3);
+          }
+          oprot.writeListEnd();
+        }
         oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
@@ -775,7 +807,11 @@ public class CheckPointService {
       boolean first = true;
 
       sb.append("success:");
-      sb.append(this.success);
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
       first = false;
       sb.append(")");
       return sb.toString();
