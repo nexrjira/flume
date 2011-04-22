@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
+import javax.print.DocFlavor.STRING;
+
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -30,6 +32,7 @@ import org.mortbay.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.cloudera.flume.agent.FlumeNode;
 import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.util.Clock;
 import com.nexr.collector.cp.CheckPointHandler;
@@ -45,6 +48,14 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 	private String checkPointFilePath;
 
+	private Map<String, TTransport> agentTransportMap; // agent-collector
+														// TTransport
+														// mappingInfo
+	private Map<String, CheckPointService.Client> agentClientMap; // agent-collector
+																	// Client
+																	// mappingInfo
+	private Map<String, CollectorInfo> agentCollectorInfo;
+	
 	private Map<String, List<PendingQueueModel>> agentTagMap; // agent,
 																// list<PendingQueueModel>
 	private Map<String, WaitingQueueModel> waitedTagList; // agent,
@@ -54,15 +65,12 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 	CheckTagIDThread checkTagIdThread;
 	ServerThread serverThread;
+	ClientThread clientThread;
 	
 	String collectorHost;
 
 	List<String> agentList;
 
-	TSocket socket = null;
-	TTransport transport = null;
-	TProtocol protocol = null;
-	CheckPointService.Client client;
 	int timeout = 10 * 1000;
 
 	// for collector
@@ -82,37 +90,93 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		checkTagIdThread = new CheckTagIDThread();
 		pendingList = new ArrayList<String>();
 		completeList = new ArrayList<String>();
+		agentTransportMap = new HashMap<String, TTransport>();
+		agentClientMap = new HashMap<String, CheckPointService.Client>();
+		agentCollectorInfo = new HashMap<String, CollectorInfo>();
 	}
 
-	@Override
-	public void startClient(String collector) {
+	
+	
+	class ClientThread extends Thread {
+		volatile boolean done = false;
+		long checkTagIdPeriod = FlumeConfiguration.get()
+				.getConfigHeartbeatPeriod();
+		CountDownLatch stopped = new CountDownLatch(1);
+		
+		ClientThread() {
+			super("CheckManager Client");
+		}
+		TSocket socket = null;
+		TTransport transport = null;
+		TProtocol protocol = null;
+		CheckPointService.Client client = null;
+
+		public void run() {
+			log.info("Done " + done + " AgentSize " + agentList.size());
+			while (!done) {
+				if(agentClientMap.size()==agentCollectorInfo.size()){
+					log.info("all Agent connected!!");
+				}else{
+					for(int i=0; i<agentList.size(); i++){
+						if(!agentClientMap.containsKey(agentList.get(i))){
+							CollectorInfo ci = agentCollectorInfo.get(agentList.get(i));
+							socket = new TSocket(ci.getCollectorHost(), ci.getCollectorPort());
+							socket.setTimeout(timeout);
+							transport = new TFramedTransport(socket);
+							protocol = new TBinaryProtocol(transport);
+							client = new CheckPointService.Client(protocol);
+							log.info("New Client " + agentList.get(i) + " CollectorINFO [" + ci.getCollectorHost()+":"+ci.getCollectorPort()+"]");
+							try {
+								transport.open();
+								agentTransportMap.put(agentList.get(i), transport);
+								agentClientMap.put(agentList.get(i), client);
+							} catch (TTransportException e) {
+								// TODO Auto-generated catch block
+								log.info(agentList.get(i) + " Connect refuse ");
+							}
+						}
+					}
+				}
+				try {
+					Thread.sleep(checkTagIdPeriod);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			log.info("ClientThread End; " );
+			
+			stopped.countDown();
+		}
+	};
+	
+	
+	public void startClient() {
 		// TODO Auto-generated method stub
 		// CheckPoint Thrift client
-		if (transport == null || !transport.isOpen()) {
-			log.info("New Client");
-			this.collectorHost = collector;
-			socket = new TSocket(collectorHost, FlumeConfiguration.get()
-					.getCheckPointPort());
-			socket.setTimeout(timeout);
-			transport = new TFramedTransport(socket);
-			protocol = new TBinaryProtocol(transport);
-			client = new CheckPointService.Client(protocol);
-			try {
-				transport.open();
-			} catch (TTransportException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		} 
+		clientThread = new ClientThread();
+		clientThread.start();
+		checkTagIdThread.start();
 	}
-
+	
 	@Override
 	public void stopClient() {
-		// TODO Auto-generated method stub
-		// CheckPoint Thrift client
-		transport.close();
+		CountDownLatch stopped = clientThread.stopped;
+		clientThread.done = true;
+		try {
+			stopped.await();
+		} catch (InterruptedException e) {
+			log.error("Problem waiting for livenessManager to stop", e);
+		}
+		
+		agentTransportMap = new HashMap<String, TTransport>();
+		agentClientMap = new HashMap<String, CheckPointService.Client>();
+		agentTagMap = new HashMap<String, List<PendingQueueModel>>();
+		waitedTagList = new HashMap<String, WaitingQueueModel>();
+		agentList = new ArrayList<String>();
+		agentCollectorInfo = new HashMap<String, CollectorInfo>();
 	}
-
+	
 	
 	class ServerThread extends Thread {
 		ServerThread() {
@@ -136,11 +200,16 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		}
 
 	};
-	
+
 	@Override
 	public void startServer() {
 		serverThread = new ServerThread();
 		serverThread.start();
+	}
+
+	@Override
+	public void stopServer() {
+		serverThread.stop();
 	}
 
 	@Override
@@ -151,9 +220,9 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	@Override
 	public String getTagId(String agentName, String fileName) {
 		// TODO Auto-generated method stub
-		if (!agentList.contains(agentName)) {
-			agentList.add(agentName);
-		}
+//		if (!agentList.contains(agentName)) {
+//			agentList.add(agentName);
+//		}
 		DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
 		long pid = Thread.currentThread().getId();
 		String prefix = agentName + "_" + fileName;
@@ -171,7 +240,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	@Override
 	public Map<String, Long> getOffset(String logicalNodeName) {
 		// TODO Auto-generated method stub
-		// checkpoint �뚯씪�먯꽌 �대떦 logical Node���대떦�섎뒗 �뚯씪怨�offset���꾨떖.
+		// checkpoint ÌååÏùºÏóêÏÑú Ìï¥Îãπ logical NodeÏóê Ìï¥ÎãπÌïòÎäî ÌååÏùºÍ≥º offsetÏùÑ Ï†ÑÎã¨.
 		Map<String, Long> result = new HashMap<String, Long>();
 
 		FileReader fileReader;
@@ -212,12 +281,17 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 			while (!done) {
 				try {
-					startClient(collectorHost);
 					checkCollectorTagID();
 					Clock.sleep(checkTagIdPeriod);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+//				try {
+//					Thread.sleep(checkTagIdPeriod);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
 			}
 
 			stopped.countDown();
@@ -226,18 +300,29 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	};
 
 	@Override
-	public void startTagChecker() {
-		checkTagIdThread.start();
+	public void startTagChecker(String agentName, String collectorHost,
+			int collectorPort) {
+		// startClientÎ•º Ìò∏Ï∂ú ÌïòÏßÄ ÏïäÍ≥† Ïù¥ Î©îÏÜåÎìúÎ•º Ìò∏Ï∂ú ÌïòÏó¨
+		// Ïì∞Î†àÎìú ÎÇ¥ÏóêÏÑú startÎ•º Ìò∏Ï∂ú ÌïòÎèÑÎ°ù Ìï®.
+		if (!agentList.contains(agentName)) {
+			agentList.add(agentName);
+		}
+		if(!agentCollectorInfo.containsKey(agentName)){
+			agentCollectorInfo.put(agentName, new CollectorInfo(collectorHost, collectorPort));
+		}
 	}
 
 	@Override
-	public void stopTagChecker() {
-		CountDownLatch stopped = checkTagIdThread.stopped;
-		checkTagIdThread.done = true;
-		try {
-			stopped.await();
-		} catch (InterruptedException e) {
-			log.error("Problem waiting for livenessManager to stop", e);
+	public void stopTagChecker(String agentName) {
+		agentTransportMap.remove(agentName);
+		agentClientMap.remove(agentName);
+		agentTagMap.remove(agentName);
+		waitedTagList.remove(agentName);
+		agentCollectorInfo.remove(agentName);
+		for(int i=0; i<agentList.size(); i++){
+			if(agentList.get(i)==agentName){
+				agentList.remove(i);
+			}
 		}
 	}
 
@@ -247,9 +332,9 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		// TODO Auto-generated method stub
 		List<PendingQueueModel> tags;
 
-		if (!agentList.contains(agentName)) {
-			agentList.add(agentName);
-		}
+//		if (!agentList.contains(agentName)) {
+//			agentList.add(agentName);
+//		}
 		if (agentTagMap.containsKey(agentName)) {
 			tags = agentTagMap.get(agentName);
 			PendingQueueModel pqm = new PendingQueueModel(tagId, tagContent);
@@ -277,14 +362,14 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		for (int i = 0; i < tagIds.size(); i++) {
 			if (!completeList.contains(tagIds.get(i))) {
 				completeList.add(tagIds.get(i));
-				log.info("Tag " + tagIds.get(i) + " added");
+				log.info("Tag " + tagIds.get(i) + " added CompleteList");
 			}
 		}
 		log.info("CompleteList Size " + completeList.size());
 	}
 
 	@Override
-	// Collector�먯꽌 諛붾줈 CompleteList濡�TagId瑜��ｌ쑝硫��꾩슂 �놁쓬.
+	// CollectorÏóêÏÑú Î∞îÎ°ú CompleteListÎ°ú TagIdÎ•º ÎÑ£ÏúºÎ©¥ ÌïÑÏöî ÏóÜÏùå.
 	public void moveToCompleteList() {
 		// TODO Auto-generated method stub
 		Iterator<String> it = pendingList.iterator();
@@ -297,14 +382,14 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	}
 
 	@Override
-	// Collecter tagId媛��덈뒗吏��뺤씤�섍퀬 �덉쑝硫�True瑜��꾨떖�섍퀬 completeList�먯꽌 ��젣��
+	// Collecter tagIdÍ∞Ä ÏûàÎäîÏßÄ ÌôïÏù∏ÌïòÍ≥† ÏûàÏúºÎ©¥ TrueÎ•º Ï†ÑÎã¨ÌïòÍ≥† completeListÏóêÏÑú ÏÇ≠Ï†úÌï®.
 	public boolean getTagList(String tagId) {
 		// TODO Auto-generated method stub
 		boolean res = false;
 		String v = null;
 		log.info("CompleteList " + completeList.size());
-		for(int i=0; i<completeList.size(); i++){
-			if(completeList.get(i).equals(tagId)){
+		for (int i = 0; i < completeList.size(); i++) {
+			if (completeList.get(i).equals(tagId)) {
 				v = completeList.get(i);
 				res = true;
 				completeList.remove(i);
@@ -316,28 +401,37 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 	public void checkCollectorTagID() {
 		// TODO Auto-generated method stub
-		// pendingQueue���덈뒗 agent��tagId瑜�紐⑤몢 泥댄겕 �대낫怨�
-		// 留덉�留�true由ы꽩 諛쏆� 媛믪쓣 湲곗뼲�덈떎媛�checkpoint�뚯씪��update�쒕떎.
+		// pendingQueueÏóê ÏûàÎäî agentÏùò tagIdÎ•º Î™®Îëê Ï≤¥ÌÅ¨ Ìï¥Î≥¥Í≥†
+		// ÎßàÏßÄÎßâ trueÎ¶¨ÌÑ¥ Î∞õÏùÄ Í∞íÏùÑ Í∏∞ÏñµÌñàÎã§Í∞Ä checkpointÌååÏùºÏóê updateÌïúÎã§.
 		boolean res = true;
 		PendingQueueModel currentTagId = null;
 		
+		log.info("agentList ==> " + agentList.size());
+		log.info("agentClientMap ==> " + agentClientMap.size());
 		try {
 			for (int i = 0; i < agentList.size(); i++) {
 				List<PendingQueueModel> tags = agentTagMap
 						.get(agentList.get(i));
-				if(tags != null){
+				
+				if (tags != null && agentClientMap.size()>0) {
 					for (int t = 0; t < tags.size(); t++) {
-						res = client.checkTagId(tags.get(t).getTagId());
-						currentTagId = tags.get(t);
-						log.info("Current TagID " +  currentTagId.getTagId());
-						if (res) {
-							// �꾩옱 TagId ��옣 ��由ъ뒪�몄뿉����젣.
-							tags.remove(t);
-							updateCheckPointFile(agentList.get(i), currentTagId);
-						} else {
-							if (currentTagId != null) {
-								updateWaitingTagList(agentList.get(i), tags.get(t)
-										.getTagId(), tags.get(t).getContents());
+//						log.info("TagID " + tags.get(t).getTagId());
+//						log.info("Client " + agentClientMap.get(agentList.get(i)).toString());
+						if(agentClientMap.get(agentList.get(i)) != null){
+							res = agentClientMap.get(agentList.get(i)).checkTagId(
+									tags.get(t).getTagId());
+							currentTagId = tags.get(t);
+							log.info("Current TagID " + currentTagId.getTagId());
+							if (res) {
+								// ÌòÑÏû¨ TagId Ï†ÄÏû• ÌõÑ Î¶¨Ïä§Ìä∏ÏóêÏÑú ÏÇ≠Ï†ú.
+								tags.remove(t);
+								updateCheckPointFile(agentList.get(i), currentTagId);
+							} else {
+								if (currentTagId != null) {
+									updateWaitingTagList(agentList.get(i), tags
+											.get(t).getTagId(), tags.get(t)
+											.getContents());
+								}
 							}
 						}
 					}
@@ -361,8 +455,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 						.get(keys[i]).getTagId(), waitedTagList.get(keys[i])
 						.getContents());
 				updateCheckPointFile(keys[i].toString(), pqm);
-				
-				//waitedTagList�먯꽌 ��젣
+
+				// waitedTagListÏóêÏÑú ÏÇ≠Ï†ú
 				waitedTagList.remove(keys[i]);
 				agentTagMap.remove(agentName);
 			}
@@ -378,8 +472,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 			wqm = new WaitingQueueModel(tagId, contents, 0);
 			waitedTagList.put(agentName, wqm);
 		}
-		
-		
+
 	}
 
 	public void updateCheckPointFile(String logicalNodeName,
@@ -418,7 +511,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 					fileReader = new FileReader(ckpointFile);
 					reader = new BufferedReader(fileReader);
 
-					// �꾩옱 泥댄겕�ъ씤���뚯씪���쎌뼱��硫붾え由ъ뿉 ��옣.
+					// ÌòÑÏû¨ Ï≤¥ÌÅ¨Ìè¨Ïù∏Ìä∏ ÌååÏùºÏùÑ ÏùΩÏñ¥ÏÑú Î©îÎ™®Î¶¨Ïóê Ï†ÄÏû•.
 					while ((line = reader.readLine()) != null) {
 						compareMap.put(
 								line.substring(0, line.indexOf(SEPERATOR))
@@ -427,7 +520,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 										line.length()).trim());
 					}
 
-					// �낅젰 諛쏆� TagID��媛��낅젰
+					// ÏûÖÎ†• Î∞õÏùÄ TagIDÏùò Í∞í ÏûÖÎ†•
 					for (int i = 0; i < keys.length; i++) {
 						compareMap.put(keys[i].toString(),
 								String.valueOf(res.get(keys[i])));
@@ -466,6 +559,144 @@ public class CheckPointManagerImpl implements CheckPointManager {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public static void main(String[] args) throws InterruptedException{
+		CheckPointManager cp = FlumeNode.getInstance().getCheckPointManager();
+		
+		//1. Agent Retry Î∞è ÏÑúÎ≤Ñ Ïó∞Í≤∞ ÌÖåÏä§Ìä∏
+		/*
+		cp.startClient();
+		cp.startTagChecker("agent1", "localhost", 9999);
+		cp.startTagChecker("agent2", "localhost", 13421);
+		Thread.sleep(2000);
+		cp.startServer();
+		*/
+		
+		//2. Agent, Collector Ïó∞Í≤∞
+		/*
+		cp.startClient();
+		cp.startTagChecker("agent1", "localhost", 13421);
+		Thread.sleep(2000);
+		cp.startServer();
+		
+		Map<String, Long> content1 = new HashMap<String, Long>();
+		content1.put("tx.log", 1010L);
+		Map<String, Long> content2 = new HashMap<String, Long>();
+		content2.put("tx.log", 1112L);
+		Map<String, Long> content3 = new HashMap<String, Long>();
+		content3.put("tx.log", 123L);
+		Map<String, Long> content4 = new HashMap<String, Long>();
+		content3.put("debug.log", 11123L);
+		
+		List<String> tagIds = new ArrayList<String>();
+		String tagId1 = cp.getTagId("agent1", "tx.log");
+		String tagId2 = cp.getTagId("agent1", "tx.log");
+		String tagId3 = cp.getTagId("agent1", "tx.log");
+		String tagId4 = cp.getTagId("agent1", "debug.log");
+		
+		cp.addPendingQ(tagId1, "agent1", content1);
+		cp.addPendingQ(tagId2, "agent1",content2);
+		cp.addPendingQ(tagId3, "agent1",content3);
+		cp.addPendingQ(tagId4, "agent1",content4);
+		
+		tagIds.add(tagId1);tagIds.add(tagId2);tagIds.add(tagId3);tagIds.add(tagId4);
+		cp.addCollectorCompleteList(tagIds);
+		*/
+		
+		//2. Agent, Collector Ïó∞Í≤∞ 
+		/*
+		cp.startClient();
+		cp.startTagChecker("agent1", "localhost", 13421);
+		cp.startTagChecker("agent2", "localhost", 13421);
+		Thread.sleep(2000);
+		cp.startServer();
+		
+		Map<String, Long> content1 = new HashMap<String, Long>();
+		content1.put("tx.log", 1010L);
+		Map<String, Long> content2 = new HashMap<String, Long>();
+		content2.put("tx.log", 1112L);
+		Map<String, Long> content3 = new HashMap<String, Long>();
+		content3.put("tx.log", 123L);
+		Map<String, Long> content4 = new HashMap<String, Long>();
+		content4.put("debug.log", 11123L);
+		
+		List<String> tagIds = new ArrayList<String>();
+		String tagId1 = cp.getTagId("agent1", "tx.log");
+		String tagId2 = cp.getTagId("agent2", "tx.log");
+		String tagId3 = cp.getTagId("agent1", "tx.log");
+		String tagId4 = cp.getTagId("agent2", "debug.log");
+		
+		cp.addPendingQ(tagId1, "agent1", content1);
+		cp.addPendingQ(tagId2, "agent2",content2);
+		cp.addPendingQ(tagId3, "agent1",content3);
+		cp.addPendingQ(tagId4, "agent2",content4);
+		
+		tagIds.add(tagId1);tagIds.add(tagId2);tagIds.add(tagId3);tagIds.add(tagId4);
+		cp.addCollectorCompleteList(tagIds);
+		*/
+		
+		// 2. Pending QueueÏóê Ïò§Îûò ÏûàÏùÑÎïå checkpointÌååÏùºÏóê Ïì∞Í≥† retryÌïòÎèÑÎ°ù Ìï®.
+		/*
+		cp.startClient();
+		cp.startTagChecker("agent1", "localhost", 13421);
+		Thread.sleep(2000);
+		cp.startServer();
+		
+		Map<String, Long> content1 = new HashMap<String, Long>();
+		content1.put("tx.log", 1010L);
+		Map<String, Long> content2 = new HashMap<String, Long>();
+		content2.put("tx.log", 1020L);
+		Map<String, Long> content3 = new HashMap<String, Long>();
+		content3.put("tx.log", 1030L);
+		Map<String, Long> content4 = new HashMap<String, Long>();
+		content4.put("tx.log", 1040L);
+		
+		List<String> tagIds = new ArrayList<String>();
+		String tagId1 = cp.getTagId("agent1", "tx.log");
+		String tagId2 = cp.getTagId("agent1", "tx.log");
+		String tagId3 = cp.getTagId("agent1", "tx.log");
+		String tagId4 = cp.getTagId("agent1", "tx.log");
+		
+		cp.addPendingQ(tagId1, "agent1", content1);
+		cp.addPendingQ(tagId2, "agent2",content2);
+		cp.addPendingQ(tagId3, "agent1",content3);
+		cp.addPendingQ(tagId4, "agent2",content4);
+		
+		tagIds.add(tagId1);tagIds.add(tagId2);tagIds.add(tagId4);
+		cp.addCollectorCompleteList(tagIds);
+		*/
+		
+		
+		//2. StartTagIdChecker, StopTagIdChecker
+		cp.startClient();
+		cp.startTagChecker("agent1", "localhost", 13421);
+		Thread.sleep(2000);
+		cp.startServer();
+		
+		Map<String, Long> content1 = new HashMap<String, Long>();
+		content1.put("tx.log", 1010L);
+		Map<String, Long> content2 = new HashMap<String, Long>();
+		content2.put("tx.log", 1020L);
+		Map<String, Long> content3 = new HashMap<String, Long>();
+		content3.put("tx.log", 1030L);
+		Map<String, Long> content4 = new HashMap<String, Long>();
+		content4.put("tx.log", 1040L);
+		
+		List<String> tagIds = new ArrayList<String>();
+		String tagId1 = cp.getTagId("agent1", "tx.log");
+		String tagId2 = cp.getTagId("agent1", "tx.log");
+		String tagId3 = cp.getTagId("agent1", "tx.log");
+		String tagId4 = cp.getTagId("agent1", "tx.log");
+		
+		cp.addPendingQ(tagId1, "agent1", content1);
+		cp.addPendingQ(tagId2, "agent2",content2);
+		cp.addPendingQ(tagId3, "agent1",content3);
+		cp.addPendingQ(tagId4, "agent2",content4);
+		
+		Thread.sleep(20000);
+		log.info("stopTagCkecker");
+		cp.stopTagChecker("agent1");
 	}
 
 }

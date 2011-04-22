@@ -7,7 +7,7 @@ public interface CheckPointManager {
 
 	public String getTagId(String agentName, String filename);
 
-	public void startClient(String collector);
+	public void startClient();
 	
 	public void stopClient();
 
@@ -23,17 +23,21 @@ public interface CheckPointManager {
 
 	public void setCollectorHost(String host);
 
-	public void startTagChecker();
+	public void startTagChecker(String agentName, String collectorHost, int collectorPort);
 	
-	public void stopTagChecker();
+	public void stopTagChecker(String agentName);
 	
 	//for Collector
 	public void startServer();
+	
+	public void stopServer();
+	
 	@Deprecated
 	public void addCollectorPendingList(String tagId);
 	
 	public void addCollectorCompleteList(List<String> tagIds);
-
+	
+	@Deprecated
 	public void moveToCompleteList();
 
 	public boolean getTagList(String tagId);
