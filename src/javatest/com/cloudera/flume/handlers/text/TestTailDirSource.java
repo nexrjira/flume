@@ -23,15 +23,23 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.junit.Assume;
 import org.junit.Test;
 
+import com.cloudera.flume.agent.DummyCheckPointManager;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeBuilder;
 import com.cloudera.flume.conf.FlumeSpecException;
 import com.cloudera.flume.conf.LogicalNodeContext;
+import com.cloudera.flume.core.Event;
+import com.cloudera.flume.core.EventSink;
+import com.cloudera.flume.core.EventSinkDecorator;
 import com.cloudera.flume.core.connector.DirectDriver;
 import com.cloudera.flume.reporter.ReportEvent;
 import com.cloudera.flume.reporter.aggregator.AccumulatorSink;
@@ -85,6 +93,23 @@ public class TestTailDirSource {
     // max-depth 2
     FileUtil.rmr(tmpdir);
   }
+  
+  @Test
+  public void testCheckpointBuilder() throws IOException, FlumeSpecException {
+	  File tmpdir = FileUtil.mktempdir();
+	    String src = "checkpointTailDir(\""
+	        + StringEscapeUtils.escapeJava(tmpdir.getAbsolutePath())
+	        + "\", \"foo.*\"";
+
+	    Context ctx = LogicalNodeContext.testingContext();
+	    FlumeBuilder.buildSource(ctx, src + ")"); // without startFromEnd param
+	    FlumeBuilder.buildSource(ctx, src + ", true)"); // with startFromEnd = true
+	    FlumeBuilder.buildSource(ctx, src + ", false)"); // with startFromEnd =
+	    // false
+	    FlumeBuilder.buildSource(ctx, src + ", true,2)"); // recursively w/
+	    // max-depth 2
+	    FileUtil.rmr(tmpdir);  
+  }
 
   @Test(expected = FlumeSpecException.class)
   public void testFailBuilder() throws IOException, FlumeSpecException {
@@ -107,6 +132,21 @@ public class TestTailDirSource {
       }
       pw.close();
     }
+  }
+  
+  List<String> genFilesWithFixedContent(File tmpdir, String prefix, int files, int lines) throws IOException {
+	  List<String> fileNames = new ArrayList<String>();
+	  for (int i = 0; i < files; i++) {
+	      File tmpfile = File.createTempFile(prefix, "bar", tmpdir);
+	      fileNames.add(tmpfile.getName());
+	      PrintWriter pw = new PrintWriter(tmpfile);
+	      for (int j = 0; j < lines; j++) {
+	        pw.println("0123456789"); //TODO 정해진 byte의 줄을 만들 수 있게 수정
+	      }
+	      pw.close();
+	      System.out.println(tmpfile.getName() + " : " + tmpfile.length());
+	    } 
+	  return fileNames;
   }
 
   /**
@@ -134,6 +174,56 @@ public class TestTailDirSource {
     src.close();
     cnt.close();
     FileUtil.rmr(tmpdir);
+  }
+  
+  @Test
+  public void testCheckpointFiles() throws IOException, InterruptedException {
+	  File tmpdir = FileUtil.mktempdir();
+	  TailDirSource src = new TailDirSource(tmpdir, ".*");
+	  DummyCheckPointManager dcpManager = new DummyCheckPointManager();
+	  
+	  List<String> fileNames = genFilesWithFixedContent(tmpdir, "foo", 10, 100);
+	  
+	  Map<String, Long> checkPointMap = new HashMap<String, Long>();
+	  for(String fileName : fileNames) {
+		  checkPointMap.put(fileName, 550l);
+	  }
+	  dcpManager.setCheckPointMap(checkPointMap);
+	  src.setCheckPointManager(dcpManager);
+	  src.initCheckPoint("dummy");
+
+	  
+	  
+	  AccumulatorSink cnt = new AccumulatorSink("tailcount");
+	  
+	  EventSinkDecorator<EventSink> eventSinkDecorator = new EventSinkDecorator<EventSink>(cnt) {
+
+		@Override
+		public void append(Event e) throws IOException, InterruptedException {
+			if(e.get(TailSource.A_TAILSRCOFFSET) != null) {
+				return;
+			}
+			super.append(e);
+		}
+		  
+	  };
+	  
+	  src.open();
+	  eventSinkDecorator.open();
+	  DirectDriver drv = new DirectDriver(src, eventSinkDecorator);
+	  
+	  drv.start();
+	  
+	  Clock.sleep(1000);
+	  
+	  assertEquals(500, cnt.getCount());
+	  
+	  System.out.println("cntCount : " + cnt.getCount());
+	  drv.stop();
+	  src.close();
+	  eventSinkDecorator.close();
+	  FileUtil.rmr(tmpdir);
+	  
   }
 
   /**

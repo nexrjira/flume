@@ -28,7 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.cloudera.flume.agent.FlumeNode;
 import com.cloudera.flume.conf.Context;
+import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.conf.SourceFactory.SourceBuilder;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventSource;
@@ -39,6 +41,7 @@ import com.cloudera.util.dirwatcher.DirChangeHandler;
 import com.cloudera.util.dirwatcher.DirWatcher;
 import com.cloudera.util.dirwatcher.RegexFileFilter;
 import com.google.common.base.Preconditions;
+import com.nexr.agent.cp.CheckPointManager;
 
 /**
  * This source tails all the file in a directory that match a specified regular
@@ -57,6 +60,10 @@ public class TailDirSource extends EventSource.Base {
 
   final private String delimRegex;
   final private DelimMode delimMode;
+  
+  private CheckPointManager checkPointManager;
+  private Map<String, Long> checkPointOffsetMap;
+  
 
   // Indicates whether dir was checked. It is false before source is open
   // and set to true after the first check of a dir
@@ -114,7 +121,18 @@ public class TailDirSource extends EventSource.Base {
     this.delimRegex = delimRegex;
     this.delimMode = delimMode;
   }
-
+  
+  /**
+   * @param logicalNodeName
+   */
+  protected void initCheckPoint(String logicalNodeName) {
+	  if(checkPointManager == null) {
+		  this.checkPointOffsetMap =  FlumeNode.getInstance().getCheckPointManager().getOffset(logicalNodeName);
+	  } else {
+		  this.checkPointOffsetMap = checkPointManager.getOffset(logicalNodeName);
+	  }
+  }
+  
   /**
    * Must be synchronized to isolate watcher
    */
@@ -172,7 +190,29 @@ public class TailDirSource extends EventSource.Base {
               return;
             }
           } else {
-            c = new Cursor(tail.sync, f);
+        	  if(checkPointOffsetMap != null && checkPointOffsetMap.containsKey(f.getName())) {
+        		  long checkPointOffset = checkPointOffsetMap.get(f.getName());
+        		  if(checkPointOffset > f.length()) {
+        			  LOG.warn("Invalid checkpoint offset : checkpoint offset is larger than " +
+        			  		"file length[checkpoint : " + checkPointOffset + ", fileLength : " + f.length()
+        			  		+", fileName : " + f.getName() +"]");
+        			  checkPointOffset = f.length();
+        		  }
+        		  c = new Cursor(tail.sync, f, checkPointOffsetMap.get(f.getName()), 
+        				  f.length(), f.lastModified(), true);
+        		  try {
+  					c.initCursorPos();
+          		  } catch (InterruptedException e) {
+          			  LOG.error("Initializing of custom delimiter cursor failed", e);
+          			  c.close();
+          			  //TODO 체크포인트 offset으로 가는 것이 실패 했을 경우 어떻게 처리 해야 하는가?
+          			  return;
+          		  }
+        		  
+        		  checkPointOffsetMap.remove(f.getName());
+        	  } else {
+        		  c = new Cursor(tail.sync, f);
+        	  }
           }
         } else {
           // special delimiter modes
@@ -189,7 +229,29 @@ public class TailDirSource extends EventSource.Base {
               return;
             }
           } else {
-            c = new CustomDelimCursor(tail.sync, f, delimRegex, delimMode);
+        	  if(checkPointOffsetMap != null && checkPointOffsetMap.containsKey(f.getName())) {
+        		  long checkPointOffset = checkPointOffsetMap.get(f.getName());
+        		  if(checkPointOffset > f.length()) {
+        			  LOG.warn("Invalid checkpoint offset : checkpoint offset is larger than " +
+        			  		"file length[checkpoint : " + checkPointOffset + ", fileLength : " + f.length()
+        			  		+", fileName : " + f.getName() +"]");
+        			  checkPointOffset = f.length();
+        		  }
+        		  c = new CustomDelimCursor(tail.sync, f, checkPointOffsetMap.get(f.getName()), 
+        				  f.length(), f.lastModified(), delimRegex, delimMode, true);
+        		  try {
+					c.initCursorPos();
+        		  } catch (InterruptedException e) {
+        			  LOG.error("Initializing of custom delimiter cursor failed", e);
+        			  c.close();
+        			  //TODO 체크포인트 offset으로 가는 것이 실패 했을 경우 어떻게 처리 해야 하는가?
+        			  return;
+        		  }
+        		  
+        		  checkPointOffsetMap.remove(f.getName());
+        	  } else {
+        		  c = new CustomDelimCursor(tail.sync, f, delimRegex, delimMode);
+        	  }
           }
         }
 
@@ -309,5 +371,52 @@ public class TailDirSource extends EventSource.Base {
 
       }
     };
+  }
+  
+  public static SourceBuilder checkPointBuilder() {
+	  return new SourceBuilder() {
+		  @Override
+	      public EventSource build(Context ctx, String... argv) {
+	        Preconditions
+	            .checkArgument(argv.length >= 1 && argv.length <= 4, USAGE);
+
+	        String regex = ".*"; // default to accepting all
+	        if (argv.length >= 2) {
+	          regex = argv[1];
+	        }
+	        boolean startFromEnd = false;
+	        if (argv.length >= 3) {
+	          startFromEnd = Boolean.parseBoolean(argv[2]);
+	        }
+	        int recurseDepth = 0;
+	        if (argv.length >= 4) {
+	          recurseDepth = Integer.parseInt(argv[3]);
+	          Preconditions.checkArgument(recurseDepth >= 0,
+	              "\"recurseDepth\" should be >= 0, but was: " + recurseDepth
+	                  + ".\n" + USAGE);
+	        }
+
+	        // delim regex, delim mode
+	        Pair<String, DelimMode> mode = TailSource.extractDelimContext(ctx);
+	        TailDirSource source = null;
+	        if (mode != null) {
+	        	source = new TailDirSource(new File(argv[0]), regex, startFromEnd,
+	  	              recurseDepth, mode.getLeft(), mode.getRight()); 
+	        } else {
+	        	source = new TailDirSource(new File(argv[0]), regex, startFromEnd,
+	    	            recurseDepth);
+	        }
+	        
+	        String logicalNodeName = ctx.getValue(LogicalNodeContext.C_LOGICAL);
+	        Preconditions.checkArgument(logicalNodeName != null,
+            "Context does not have a logical node name");
+	        source.initCheckPoint(logicalNodeName);
+	        return source;
+	      }
+	  };
+  }
+
+  public void setCheckPointManager(CheckPointManager checkpointManager) {
+	this.checkPointManager = checkpointManager;
   }
 }

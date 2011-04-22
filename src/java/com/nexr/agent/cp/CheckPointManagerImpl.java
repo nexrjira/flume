@@ -73,16 +73,6 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	TNonblockingServer.Args arguments;
 	TServer server;
 
-	public static CheckPointManager manager = null;
-
-	public static CheckPointManager getInstance() {
-		if (manager == null) {
-			manager = new CheckPointManagerImpl();
-			return manager;
-		} else
-			return manager;
-	}
-
 	public CheckPointManagerImpl() {
 		agentList = new ArrayList<String>();
 		agentTagMap = new HashMap<String, List<PendingQueueModel>>();

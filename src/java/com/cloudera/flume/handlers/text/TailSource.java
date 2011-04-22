@@ -79,11 +79,11 @@ import com.google.common.base.Preconditions;
  * Ideally this would use the inode number of file handle number but didn't find
  * java api to get these, or Java 7's WatchService file watcher API.
  * 
- * add test text by jesse
  */
 public class TailSource extends EventSource.Base {
   private static final Logger LOG = LoggerFactory.getLogger(TailSource.class);
   public static final String A_TAILSRCFILE = "tailSrcFile";
+  public static final String A_TAILSRCOFFSET = "tailSrcOffset";
 
   private static int thdCount = 0;
   private volatile boolean done = false;
