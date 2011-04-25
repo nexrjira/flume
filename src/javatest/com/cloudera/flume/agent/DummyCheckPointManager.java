@@ -11,20 +11,11 @@ public class DummyCheckPointManager implements CheckPointManager {
 	
 	@Override
 	public String getTagId(String agentName, String filename) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public void startClient(String collector) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void stopClient() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -34,38 +25,18 @@ public class DummyCheckPointManager implements CheckPointManager {
 
 	@Override
 	public void setCollectorHost(String host) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void startTagChecker() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void stopTagChecker() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void startServer() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void addCollectorPendingList(String tagId) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void moveToCompleteList() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	public void setCheckPointMap(Map<String, Long> checkPointMap) {
@@ -79,12 +50,29 @@ public class DummyCheckPointManager implements CheckPointManager {
 
 	@Override
 	public void addCollectorCompleteList(List<String> tagIds) {
-		// TODO Auto-generated method stub
 	}
 
 	@Override
 	public boolean getTagList(String tagId) {
-		// TODO Auto-generated method stub
 		return false;
 	}
+
+	@Override
+	public void startClient() {
+	}
+
+	@Override
+	public void startTagChecker(String agentName, String collectorHost,
+			int collectorPort) {
+	}
+
+	@Override
+	public void stopTagChecker(String agentName) {
+	}
+
+	@Override
+	public void stopServer() {
+	}
+	
+	
 }

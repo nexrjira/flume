@@ -80,12 +80,13 @@ public class RpcSink extends EventSink.Base {
 
 		@Override
 		public EventSink build(Context context, String... args) {
-	        if (args.length > 2) {
+	        if (args.length > 3) {
 	            throw new IllegalArgumentException(
-	                "usage: checkpointRpcSink([hostname, [portno]]) ");
+	                "usage: checkpointRpcSink([hostname, [portno, [checkpointPort]]) ");
 	          }
 	          String host = FlumeConfiguration.get().getCollectorHost();
 	          int port = FlumeConfiguration.get().getCollectorPort();
+	          int cpPort = FlumeConfiguration.get().getCheckPointPort();
 	          if (args.length >= 1) {
 	            host = args[0];
 	          }
@@ -93,21 +94,25 @@ public class RpcSink extends EventSink.Base {
 	          if (args.length >= 2) {
 	            port = Integer.parseInt(args[1]);
 	          }
+	          
+	          if(args.length >= 3) {
+	        	  cpPort = Integer.parseInt(args[2]);
+	          }
 	          /*
 	           * I am hoping here that master calls this builder and at that time the
 	           * FlumeConfiguration is all set.
 	           */
 	          if (FlumeConfiguration.get().getEventRPC().equals(
 	              FlumeConfiguration.RPC_TYPE_THRIFT)) {
-	            return new ThriftEventSink(host, port, false, true);
+	            return new ThriftEventSink(host, port, false, true, cpPort);
 	          }
 	          if (FlumeConfiguration.get().getEventRPC().equals(
 	              FlumeConfiguration.RPC_TYPE_AVRO)) {
-	            return new AvroEventSink(host, port);
+	            return new AvroEventSink(host, port); //TODO  do implement like thriftRpc (about checkpoint)
 	          }
 	          LOG.warn("event.rpc.type not defined.  It should be either"
 	              + " \"THRIFT\" or \"AVRO\". Defaulting to Thrift");
-	          return new ThriftEventSink(host, port, false, true);
+	          return new ThriftEventSink(host, port, false, true, cpPort);
 		}
 	  };
   }

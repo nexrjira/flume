@@ -33,12 +33,14 @@ import org.slf4j.LoggerFactory;
 import com.cloudera.flume.agent.FlumeNode;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeConfiguration;
+import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.conf.SinkFactory.SinkBuilder;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventImpl;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.handlers.thrift.ThriftFlumeEventServer.Client;
 import com.cloudera.flume.reporter.ReportEvent;
+import com.google.common.base.Preconditions;
 import com.nexr.agent.cp.CheckPointManager;
 
 /**
@@ -52,8 +54,10 @@ public class ThriftEventSink extends EventSink.Base {
   final public static String A_SERVERPORT = "serverPort";
   final public static String A_SENTBYTES = "sentBytes";
 
+  static String logicalNodeName;
   String host;
   int port;
+  int checkpointPort;
   Client client;
   TTransport transport;
   TStatsTransport stats;
@@ -62,21 +66,25 @@ public class ThriftEventSink extends EventSink.Base {
 
   AtomicLong sentBytes = new AtomicLong();
 
+
+  public ThriftEventSink(String host, int port, boolean nonblocking, boolean useCheckpoint, int checkpointPort) {
+	  this.host = host;
+	  this.port = port;
+	  this.nonblocking = nonblocking;
+	  this.useCheckpoint = useCheckpoint;
+	  this.checkpointPort = checkpointPort;
+  }
+  
   public ThriftEventSink(String host, int port, boolean nonblocking, boolean useCheckpoint) {
-	this.host = host;
-	this.port = port;
-	this.nonblocking = nonblocking;
-	this.useCheckpoint = useCheckpoint;
+	  this(host, port, nonblocking, useCheckpoint, 0);
   }
   
   public ThriftEventSink(String host, int port, boolean nonblocking) {
-    this.host = host;
-    this.port = port;
-    this.nonblocking = nonblocking;
+	  this(host, port, nonblocking, false);
   }
 
   public ThriftEventSink(String host, int port) {
-    this(host, port, false);
+	  this(host, port, false);
   }
 
   @Override
@@ -98,7 +106,7 @@ public class ThriftEventSink extends EventSink.Base {
       transport = null;
       LOG.info("ThriftEventSink on port " + port + " closed");
     }
-    FlumeNode.getInstance().getCheckPointManager().stopClient();
+    FlumeNode.getInstance().getCheckPointManager().stopTagChecker(logicalNodeName);
   }
 
   @Override
@@ -127,7 +135,7 @@ public class ThriftEventSink extends EventSink.Base {
           + port + " : " + e.getMessage());
     }
     FlumeNode.getInstance().getCheckPointManager().setCollectorHost(host);
-    FlumeNode.getInstance().getCheckPointManager().startTagChecker();
+    FlumeNode.getInstance().getCheckPointManager().startTagChecker(logicalNodeName, host, checkpointPort);
   }
 
   @Override
@@ -173,21 +181,31 @@ public class ThriftEventSink extends EventSink.Base {
   
   public static SinkBuilder cPbuilder() {
 	  return new SinkBuilder() {
+
 		@Override
 		public EventSink build(Context context, String... args) {
-			if (args.length > 2) {
+			if (args.length > 3) {
 				throw new IllegalArgumentException(
-					"usage: checkpointThriftSink([hostname, [portno]]) ");
+					"usage: checkpointThriftSink([hostname, [portno, [checkpointportno]]) ");
 			}
-	        String host = FlumeConfiguration.get().getCollectorHost();
+			
+			Preconditions.checkNotNull(context.getValue(LogicalNodeContext.C_LOGICAL), 
+					"Logical Node name is null");
+			logicalNodeName = context.getValue(LogicalNodeContext.C_LOGICAL);
+	        
+			String host = FlumeConfiguration.get().getCollectorHost();
 	        int port = FlumeConfiguration.get().getCollectorPort();
+	        int cpPort = FlumeConfiguration.get().getCheckPointPort();
 	        if (args.length >= 1) {
 	          host = args[0];
 	        }
 	        if (args.length >= 2) {
 	          port = Integer.parseInt(args[1]);
 	        }
-	        return new ThriftEventSink(host, port, false, true);
+	        if (args.length >= 3) {
+	        	cpPort = Integer.parseInt(args[2]);
+	        }
+	        return new ThriftEventSink(host, port, false, true, cpPort);
 		}
 	  };
   }

@@ -265,11 +265,7 @@ public class TestCollectorSink {
 	public String getTagId(String agentName, String filename) {
 		return null;
 	}
-
-	@Override
-	public void startClient(String collector) {
-	}
-
+	
 	@Override
 	public void stopClient() {
 	}
@@ -282,15 +278,7 @@ public class TestCollectorSink {
 	@Override
 	public void setCollectorHost(String host) {
 	}
-
-	@Override
-	public void startTagChecker() {
-	}
-
-	@Override
-	public void stopTagChecker() {
-	}
-
+	
 	@Override
 	public void startServer() {
 	}
@@ -316,8 +304,24 @@ public class TestCollectorSink {
 
 	@Override
 	public boolean getTagList(String tagId) {
-		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public void startClient() {
+	}
+
+	@Override
+	public void startTagChecker(String agentName, String collectorHost,
+			int collectorPort) {
+	}
+
+	@Override
+	public void stopTagChecker(String agentName) {
+	}
+
+	@Override
+	public void stopServer() {
 	}
 	  
   }
