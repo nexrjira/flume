@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.cloudera.flume.agent.FlumeNode;
 import com.cloudera.flume.conf.Context;
+import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.flume.conf.SinkFactory.SinkDecoBuilder;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventSink;
@@ -21,11 +22,14 @@ public class CheckpointChecker<S extends EventSink> extends
 	static final Logger LOG = LoggerFactory.getLogger(CheckpointChecker.class);
 
 	private AckListener listener;
+	
+	int port;
 
-	public CheckpointChecker(S s, AckListener l) {
+	public CheckpointChecker(S s, AckListener l, int checkpointPort) {
 		super(s);
 		Preconditions.checkNotNull(l);
 		this.listener = l;
+		this.port = checkpointPort;
 	}
 	
 	public CheckpointChecker(S s) {
@@ -51,6 +55,7 @@ public class CheckpointChecker<S extends EventSink> extends
 		        LOG.info("expired " + group);
 		    }
 		};
+		this.port = FlumeConfiguration.get().getCheckPointPort();
 	}
 
 	@Override
@@ -61,7 +66,7 @@ public class CheckpointChecker<S extends EventSink> extends
 
 	@Override
 	public void open() throws IOException, InterruptedException {
-		FlumeNode.getInstance().getCheckPointManager().startServer();
+		FlumeNode.getInstance().getCheckPointManager().startServer(port);
 		super.open();
 	}
 
@@ -93,12 +98,17 @@ public class CheckpointChecker<S extends EventSink> extends
 			@Override
 			public EventSinkDecorator<EventSink> build(Context context,
 					String... argv) {
-				Preconditions.checkArgument(argv.length == 0, "usage: checkpointChecker");
+				Preconditions.checkArgument(argv.length <= 1, "usage: checkpointChecker [checkpointPort]");
 				//TODO 이 빌더로 생성하는 일은 없을 것이다. 
 				// FlumeNode.getInstance().getCollectorAckListener()
 				// 로 보내면 안된다. 
+				int checkpointPort = FlumeConfiguration.get().getCheckPointPort();
+				if(argv.length >= 1) {
+					checkpointPort = Integer.parseInt(argv[0]);
+				}
+				
 				return new CheckpointChecker<EventSink>(null, 
-						FlumeNode.getInstance().getCollectorAckListener());
+						FlumeNode.getInstance().getCollectorAckListener(), checkpointPort);
 			}
 		};
 	}

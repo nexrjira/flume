@@ -148,7 +148,7 @@ public class CollectorSink extends EventSink.Base {
     
     if(useCheckpoint) {
     	setCheckpointManager(FlumeNode.getInstance().getCheckPointManager());
-    	snk = new CheckpointChecker<EventSink>(tmp, cpAccum);
+    	snk = new CheckpointChecker<EventSink>(tmp, cpAccum, checkpointPort);
     } else {
     	//TODO 둘다 boolean 으로 실행을 해야 하지 않나? 
     	//DiskFailover일 때는 CollectorSink를 쓰지 않나?

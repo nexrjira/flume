@@ -324,7 +324,10 @@ public class TestCollectorSink {
 	@Override
 	public void stopServer() {
 	}
-	  
+
+	@Override
+	public void startServer(int port) {
+	}
   }
 
   /**
@@ -809,7 +812,7 @@ public class TestCollectorSink {
 		  + ")";
 		  CollectorSink snk = (CollectorSink) FlumeBuilder.buildSink(new Context(), snkspec);
 		  snk.open();
-		  Mockito.verify(cpManager).startServer();
+		  Mockito.verify(cpManager).startServer(5959);
 		  snk.close();
 		  Mockito.verify(cpManager).stopServer();
 	  } finally {
