@@ -28,6 +28,8 @@ public interface CheckPointManager {
 	public void stopTagChecker(String agentName);
 	
 	//for Collector
+	public void startServer(int port);
+	
 	public void startServer();
 	
 	public void stopServer();
