@@ -132,7 +132,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 			while (!done) {
 				synchronized (sync) {
 					if (agentClientMap.size() == agentCollectorInfo.size()) {
-						
+
 					} else {
 						for (int i = 0; i < agentList.size(); i++) {
 							if (!agentClientMap.containsKey(agentList.get(i))) {
@@ -206,13 +206,12 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	}
 
 	class ServerThread extends Thread {
-		int port = FlumeConfiguration
-		.get().getCheckPointPort();
-		
+		int port = FlumeConfiguration.get().getCheckPointPort();
+
 		ServerThread() {
 			super("CheckManager Server");
 		}
-		
+
 		ServerThread(int port) {
 			this.port = port;
 		}
@@ -233,7 +232,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		}
 
 	};
-	
+
 	@Override
 	public void startServer() {
 		serverThread = new ServerThread();
@@ -442,15 +441,15 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		// pendingQueue에 있는 agent의 tagId를 모두 체크 해보고
 		// 마지막 true리턴 받은 값을 기억했다가 checkpoint파일에 update한다.
 		boolean res = true;
-		
-		
+
 		try {
 			for (int i = 0; i < agentList.size(); i++) {
 				List<PendingQueueModel> tags = agentTagMap
 						.get(agentList.get(i));
 
 				if (tags != null && agentClientMap.size() > 0) {
-					List<PendingQueueModel> tmp = Collections.synchronizedList(new ArrayList<PendingQueueModel>());
+					List<PendingQueueModel> tmp = Collections
+							.synchronizedList(new ArrayList<PendingQueueModel>());
 					PendingQueueModel currentTagId = null;
 					for (int t = 0; t < tags.size(); t++) {
 						if (agentClientMap.get(agentList.get(i)) != null) {
@@ -459,8 +458,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 							if (res) {
 								// 현재 TagId 저장 후 리스트에서 삭제.
 								currentTagId = tags.get(t);
-								log.info("Current TagID " + currentTagId.getTagId());
-								
+								log.info("Current TagID "
+										+ currentTagId.getTagId());
 								tmp.add(tags.get(t));
 
 							} else {
@@ -470,14 +469,14 @@ public class CheckPointManagerImpl implements CheckPointManager {
 							}
 						}
 					}
-					if(currentTagId != null){
-						updateCheckPointFile(agentList.get(i),
-								currentTagId);
-						for(int t=0; t<tmp.size(); t++){
-							if(agentTagMap.get(agentList.get(i)) != null){
+					if (currentTagId != null) {
+						updateCheckPointFile(agentList.get(i), currentTagId);
+						for (int t = 0; t < tmp.size(); t++) {
+							if (agentTagMap.get(agentList.get(i)) != null) {
 								agentList.get(i);
 								tmp.get(t);
-								agentTagMap.get(agentList.get(i)).remove(tmp.get(t));
+								agentTagMap.get(agentList.get(i)).remove(
+										tmp.get(t));
 							}
 						}
 					}
@@ -540,70 +539,69 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		StringBuilder contents;
 
 		Map<String, String> compareMap = new HashMap<String, String>();
-		synchronized (sync) {
-			try {
-				if (!ckpointFilePath.exists()) {
-					ckpointFilePath.mkdirs();
-					ckpointFile.createNewFile();
-				}
 
-				log.info("[" + ckpointFile.getPath() + "]"
-						+ " Check Point File Size " + ckpointFile.length());
-
-				String line = null;
-				if (ckpointFile.length() > 1) {
-					contents = new StringBuilder();
-					fileReader = new FileReader(ckpointFile);
-					reader = new BufferedReader(fileReader);
-
-					// 현재 체크포인트 파일을 읽어서 메모리에 저장.
-					while ((line = reader.readLine()) != null) {
-						compareMap.put(
-								line.substring(0, line.indexOf(SEPERATOR))
-										.trim(),
-								line.substring(line.indexOf(SEPERATOR),
-										line.length()).trim());
-					}
-
-					// 입력 받은 TagID의 값 입력
-					for (int i = 0; i < keys.length; i++) {
-						compareMap.put(keys[i].toString(),
-								String.valueOf(res.get(keys[i])));
-					}
-
-					Set cpSet = compareMap.keySet();
-					Object[] cps = cpSet.toArray();
-					for (int i = 0; i < cps.length; i++) {
-						contents.append(cps[i].toString() + SEPERATOR
-								+ compareMap.get(cps[i]) + LINE_SEPERATOR);
-					}
-
-					fw = new FileWriter(ckpointFile);
-					bw = new BufferedWriter(fw);
-					bw.write(contents.toString());
-					bw.close();
-
-				} else {
-					fileReader = new FileReader(ckpointFile);
-					reader = new BufferedReader(fileReader);
-					contents = new StringBuilder();
-
-					for (int i = 0; i < keys.length; i++) {
-						contents.append(keys[i].toString() + SEPERATOR
-								+ res.get(keys[i]) + LINE_SEPERATOR);
-					}
-					fw = new FileWriter(ckpointFile);
-					bw = new BufferedWriter(fw);
-					bw.write(contents.toString());
-					bw.close();
-					reader.close();
-				}
-
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		try {
+			if (!ckpointFilePath.exists()) {
+				ckpointFilePath.mkdirs();
+				ckpointFile.createNewFile();
 			}
+
+			log.info("[" + ckpointFile.getPath() + "]"
+					+ " Check Point File Size " + ckpointFile.length());
+
+			String line = null;
+			if (ckpointFile.length() > 1) {
+				contents = new StringBuilder();
+				fileReader = new FileReader(ckpointFile);
+				reader = new BufferedReader(fileReader);
+
+				// 현재 체크포인트 파일을 읽어서 메모리에 저장.
+				while ((line = reader.readLine()) != null) {
+					compareMap.put(
+							line.substring(0, line.indexOf(SEPERATOR)).trim(),
+							line.substring(line.indexOf(SEPERATOR),
+									line.length()).trim());
+				}
+
+				// 입력 받은 TagID의 값 입력
+				for (int i = 0; i < keys.length; i++) {
+					compareMap.put(keys[i].toString(),
+							String.valueOf(res.get(keys[i])));
+				}
+
+				Set cpSet = compareMap.keySet();
+				Object[] cps = cpSet.toArray();
+				for (int i = 0; i < cps.length; i++) {
+					contents.append(cps[i].toString() + SEPERATOR
+							+ compareMap.get(cps[i]) + LINE_SEPERATOR);
+				}
+
+				fw = new FileWriter(ckpointFile);
+				bw = new BufferedWriter(fw);
+				bw.write(contents.toString());
+				bw.close();
+
+			} else {
+				fileReader = new FileReader(ckpointFile);
+				reader = new BufferedReader(fileReader);
+				contents = new StringBuilder();
+
+				for (int i = 0; i < keys.length; i++) {
+					contents.append(keys[i].toString() + SEPERATOR
+							+ res.get(keys[i]) + LINE_SEPERATOR);
+				}
+				fw = new FileWriter(ckpointFile);
+				bw = new BufferedWriter(fw);
+				bw.write(contents.toString());
+				bw.close();
+				reader.close();
+			}
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+
 	}
 
 	public static void main(String[] args) throws InterruptedException {
@@ -700,12 +698,12 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 		tagIds.add(tagId1);
 		tagIds.add(tagId2);
-//		tagIds.add(tagId3);
+		// tagIds.add(tagId3);
 		tagIds.add(tagId4);
 		cp.addCollectorCompleteList(tagIds);
-		
+
 		Thread.sleep(20000);
-		
+
 		content1 = new HashMap<String, Long>();
 		content1.put("tx.log", 2010L);
 		content2 = new HashMap<String, Long>();
@@ -731,10 +729,9 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		tagIds.add(tagId3);
 		tagIds.add(tagId4);
 		cp.addCollectorCompleteList(tagIds);
-		
-		
+
 		Thread.sleep(20000);
-		
+
 		content1 = new HashMap<String, Long>();
 		content1.put("tx.log", 3010L);
 		content2 = new HashMap<String, Long>();
