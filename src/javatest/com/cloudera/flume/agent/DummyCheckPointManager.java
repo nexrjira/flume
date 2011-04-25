@@ -73,6 +73,8 @@ public class DummyCheckPointManager implements CheckPointManager {
 	@Override
 	public void stopServer() {
 	}
-	
-	
+
+	@Override
+	public void startServer(int port) {
+	}
 }
