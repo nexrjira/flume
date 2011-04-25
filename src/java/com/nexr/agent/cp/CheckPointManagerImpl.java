@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -60,7 +61,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 																// list<PendingQueueModel>
 	private Map<String, WaitingQueueModel> waitedTagList; // agent,
 															// WatingQueueModel
-
+	
 	private Object sync = new Object();
 
 	CheckTagIDThread checkTagIdThread;
@@ -83,16 +84,27 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	TServer server;
 
 	public CheckPointManagerImpl() {
-		agentList = new ArrayList<String>();
-		agentTagMap = new HashMap<String, List<PendingQueueModel>>();
-		waitedTagList = new HashMap<String, WaitingQueueModel>();
+//		agentList = new ArrayList<String>();
+//		agentTagMap = new HashMap<String, List<PendingQueueModel>>();
+//		waitedTagList = new HashMap<String, WaitingQueueModel>();
+//		checkPointFilePath = FlumeConfiguration.get().getCheckPointFile();
+//		checkTagIdThread = new CheckTagIDThread();
+//		pendingList = new ArrayList<String>();
+//		completeList = new ArrayList<String>();
+//		agentTransportMap = new HashMap<String, TTransport>();
+//		agentClientMap = new HashMap<String, CheckPointService.Client>();
+//		agentCollectorInfo = new HashMap<String, CollectorInfo>();
+
+		agentList = Collections.synchronizedList(new ArrayList<String>());
+		agentTagMap= Collections.synchronizedMap(new HashMap<String, List<PendingQueueModel>>());
+		waitedTagList = Collections.synchronizedMap(new HashMap<String, WaitingQueueModel>());
 		checkPointFilePath = FlumeConfiguration.get().getCheckPointFile();
 		checkTagIdThread = new CheckTagIDThread();
-		pendingList = new ArrayList<String>();
-		completeList = new ArrayList<String>();
-		agentTransportMap = new HashMap<String, TTransport>();
-		agentClientMap = new HashMap<String, CheckPointService.Client>();
-		agentCollectorInfo = new HashMap<String, CollectorInfo>();
+		pendingList = Collections.synchronizedList(new ArrayList<String>());
+		completeList = Collections.synchronizedList(new ArrayList<String>());
+		agentTransportMap = Collections.synchronizedMap(new HashMap<String, TTransport>());
+		agentClientMap = Collections.synchronizedMap(new HashMap<String, CheckPointService.Client>());
+		agentCollectorInfo = Collections.synchronizedMap(new HashMap<String, CollectorInfo>());
 	}
 
 	
@@ -307,6 +319,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		if (!agentList.contains(agentName)) {
 			agentList.add(agentName);
 		}
+	
 		if(!agentCollectorInfo.containsKey(agentName)){
 			agentCollectorInfo.put(agentName, new CollectorInfo(collectorHost, collectorPort));
 		}
@@ -637,7 +650,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		*/
 		
 		// 2. Pending QueueÏóê Ïò§Îûò ÏûàÏùÑÎïå checkpointÌååÏùºÏóê Ïì∞Í≥† retryÌïòÎèÑÎ°ù Ìï®.
-		/*
+		
 		cp.startClient();
 		cp.startTagChecker("agent1", "localhost", 13421);
 		Thread.sleep(2000);
@@ -665,38 +678,38 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		
 		tagIds.add(tagId1);tagIds.add(tagId2);tagIds.add(tagId4);
 		cp.addCollectorCompleteList(tagIds);
-		*/
+		
 		
 		
 		//2. StartTagIdChecker, StopTagIdChecker
-		cp.startClient();
-		cp.startTagChecker("agent1", "localhost", 13421);
-		Thread.sleep(2000);
-		cp.startServer();
-		
-		Map<String, Long> content1 = new HashMap<String, Long>();
-		content1.put("tx.log", 1010L);
-		Map<String, Long> content2 = new HashMap<String, Long>();
-		content2.put("tx.log", 1020L);
-		Map<String, Long> content3 = new HashMap<String, Long>();
-		content3.put("tx.log", 1030L);
-		Map<String, Long> content4 = new HashMap<String, Long>();
-		content4.put("tx.log", 1040L);
-		
-		List<String> tagIds = new ArrayList<String>();
-		String tagId1 = cp.getTagId("agent1", "tx.log");
-		String tagId2 = cp.getTagId("agent1", "tx.log");
-		String tagId3 = cp.getTagId("agent1", "tx.log");
-		String tagId4 = cp.getTagId("agent1", "tx.log");
-		
-		cp.addPendingQ(tagId1, "agent1", content1);
-		cp.addPendingQ(tagId2, "agent2",content2);
-		cp.addPendingQ(tagId3, "agent1",content3);
-		cp.addPendingQ(tagId4, "agent2",content4);
-		
-		Thread.sleep(20000);
-		log.info("stopTagCkecker");
-		cp.stopTagChecker("agent1");
+//		cp.startClient();
+//		cp.startTagChecker("agent1", "localhost", 13421);
+//		Thread.sleep(2000);
+//		cp.startServer();
+//		
+//		Map<String, Long> content1 = new HashMap<String, Long>();
+//		content1.put("tx.log", 1010L);
+//		Map<String, Long> content2 = new HashMap<String, Long>();
+//		content2.put("tx.log", 1020L);
+//		Map<String, Long> content3 = new HashMap<String, Long>();
+//		content3.put("tx.log", 1030L);
+//		Map<String, Long> content4 = new HashMap<String, Long>();
+//		content4.put("tx.log", 1040L);
+//		
+//		List<String> tagIds = new ArrayList<String>();
+//		String tagId1 = cp.getTagId("agent1", "tx.log");
+//		String tagId2 = cp.getTagId("agent1", "tx.log");
+//		String tagId3 = cp.getTagId("agent1", "tx.log");
+//		String tagId4 = cp.getTagId("agent1", "tx.log");
+//		
+//		cp.addPendingQ(tagId1, "agent1", content1);
+//		cp.addPendingQ(tagId2, "agent2",content2);
+//		cp.addPendingQ(tagId3, "agent1",content3);
+//		cp.addPendingQ(tagId4, "agent2",content4);
+//		
+//		Thread.sleep(20000);
+//		log.info("stopTagCkecker");
+//		cp.stopTagChecker("agent1");
 	}
 
 }
