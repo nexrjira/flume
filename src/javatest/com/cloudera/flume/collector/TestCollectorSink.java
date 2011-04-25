@@ -39,6 +39,7 @@ import junit.framework.Assert;
 import org.apache.log4j.Level;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -795,10 +796,37 @@ public class TestCollectorSink {
   }
   
   @Test
+  public void testCheckpointServerOpenClose() throws IOException, FlumeSpecException, InterruptedException {
+	  CheckPointManager cpManager = mock(CheckPointManager.class);
+	  BenchmarkHarness.setupFlumeNode(null, null, null, null, null, cpManager);
+	  
+	  File tmpdir = null;
+	  try {
+		  tmpdir = FileUtil.mktempdir();
+		  String snkspec = "checkpointCollectorSink(\"file:///" + tmpdir.getAbsolutePath()
+		  + "\",\"\""
+		  + ", 15000, 5959"
+		  + ")";
+		  CollectorSink snk = (CollectorSink) FlumeBuilder.buildSink(new Context(), snkspec);
+		  snk.open();
+		  Mockito.verify(cpManager).startServer();
+		  snk.close();
+		  Mockito.verify(cpManager).stopServer();
+	  } finally {
+		  if(tmpdir != null) {
+			  FileUtil.rmr(tmpdir);
+		  }
+		  BenchmarkHarness.cleanupLocalWriteDir();
+	  }
+  }
+  
+  @Test
   public void testCheckpointCollectorSink() throws IOException, InterruptedException, FlumeSpecException {
 	  MockCheckpointManager cpManager = new MockCheckpointManager();
 	  BenchmarkHarness.setupFlumeNode(null, null, null, null, null, cpManager);
-	  FlumeNode node = FlumeNode.getInstance();
+	  FlumeNode 
+	  
+	  node = FlumeNode.getInstance();
 	  
 	  
 	  File tmpdir = null;

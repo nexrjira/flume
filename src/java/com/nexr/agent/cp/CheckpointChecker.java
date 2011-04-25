@@ -55,7 +55,7 @@ public class CheckpointChecker<S extends EventSink> extends
 
 	@Override
 	public void close() throws IOException, InterruptedException {
-		//TODO checkpoint stop Server
+		FlumeNode.getInstance().getCheckPointManager().stopServer();
 		super.close();
 	}
 

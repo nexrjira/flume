@@ -88,16 +88,17 @@ public class CollectorSink extends EventSink.Base {
 
   CollectorSink(Context ctx, String snkSpec, long millis, AckListener ackDest)
       throws FlumeSpecException {
-    this(ctx, snkSpec, millis, new ProcessTagger(), 250, ackDest, false);
+    this(ctx, snkSpec, millis, new ProcessTagger(), 250, ackDest, false, FlumeConfiguration.get().getCheckPointPort());
   }
   
-  CollectorSink(Context ctx, String snkSpec, long millis, AckListener ackDest, boolean useCheckpoint)
+  CollectorSink(Context ctx, String snkSpec, long millis, AckListener ackDest, boolean useCheckpoint, int checkpointPort)
   	throws FlumeSpecException {
-	  this(ctx, snkSpec, millis, new ProcessTagger(), 250, ackDest, useCheckpoint);
+	  this(ctx, snkSpec, millis, new ProcessTagger(), 250, ackDest, useCheckpoint, checkpointPort);
   }
 
   CollectorSink(Context ctx, final String snkSpec, final long millis,
-      final Tagger tagger, long checkmillis, AckListener ackDest, boolean useCheckpoint) {
+      final Tagger tagger, long checkmillis, AckListener ackDest, boolean useCheckpoint
+      ,int checkpointPort) {
     this.ackDest = ackDest;
     this.snkSpec = snkSpec;
     this.useCheckpoint = useCheckpoint;
@@ -163,18 +164,18 @@ public class CollectorSink extends EventSink.Base {
       throws FlumeSpecException {
     this(ctx, "escapedCustomDfs(\"" + StringEscapeUtils.escapeJava(path)
         + "\",\"" + StringEscapeUtils.escapeJava(filename) + "%{rolltag}"
-        + "\" )", millis, tagger, checkmillis, ackDest, false);
+        + "\" )", millis, tagger, checkmillis, ackDest, false, FlumeConfiguration.get().getCheckPointPort());
   }
   
   /**
    * This is a compatibility mode for older version of the tests
    */
   CollectorSink(Context ctx, String path, String filename, long millis,
-      final Tagger tagger, long checkmillis, AckListener ackDest, boolean useCheckpoint)
+      final Tagger tagger, long checkmillis, AckListener ackDest, boolean useCheckpoint, int checkpointPort)
       throws FlumeSpecException {
     this(ctx, "escapedCustomDfs(\"" + StringEscapeUtils.escapeJava(path)
         + "\",\"" + StringEscapeUtils.escapeJava(filename) + "%{rolltag}"
-        + "\" )", millis, tagger, checkmillis, ackDest, useCheckpoint);
+        + "\" )", millis, tagger, checkmillis, ackDest, useCheckpoint, checkpointPort);
   }
   
   public void setCheckpointManager(CheckPointManager cpManager) {
@@ -388,10 +389,11 @@ public class CollectorSink extends EventSink.Base {
 	  return new SinkBuilder() {
 		@Override
 		public EventSink build(Context context, String... argv) {
-			Preconditions.checkArgument(argv.length <= 3 && argv.length >= 2,
-	            "usage: checkpointCollectorSink[(dfsdir,path[,rollmillis])]");
+			Preconditions.checkArgument(argv.length <= 4 && argv.length >= 2,
+	            "usage: checkpointCollectorSink[(dfsdir,path, [,rollmillis, [checkpointPort]])]");
 			String logdir = FlumeConfiguration.get().getCollectorDfsDir(); // default
 	        long millis = FlumeConfiguration.get().getCollectorRollMillis();
+	        int checkpointPort = FlumeConfiguration.get().getCheckPointPort();
 	        String prefix = "";
 	        if (argv.length >= 1) {
 	          logdir = argv[0]; // override
@@ -402,11 +404,14 @@ public class CollectorSink extends EventSink.Base {
 	        if (argv.length >= 3) {
 	          millis = Long.parseLong(argv[2]);
 	        }
+	        if (argv.length >= 4) {
+	        	checkpointPort = Integer.parseInt(argv[3]);
+	        }
 	        EventSink snk;
 			try {
 				snk = new CollectorSink(context, logdir, prefix, millis,
 				        new ProcessTagger(), 250, FlumeNode.getInstance()
-				            .getCollectorAckListener(), true);
+				            .getCollectorAckListener(), true, checkpointPort);
 				return snk;
 			} catch (FlumeSpecException e) {
 		          LOG.error("CollectorSink spec error " + e, e);
