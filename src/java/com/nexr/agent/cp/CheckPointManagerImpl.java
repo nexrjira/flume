@@ -334,7 +334,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 			int collectorPort) {
 		// startClientÎ•º Ìò∏Ï∂ú ÌïòÏßÄ ÏïäÍ≥† Ïù¥ Î©îÏÜåÎìúÎ•º Ìò∏Ï∂ú ÌïòÏó¨
 		// Ïì∞Î†àÎìú ÎÇ¥ÏóêÏÑú startÎ•º Ìò∏Ï∂ú ÌïòÎèÑÎ°ù Ìï®.
-
+		log.info("StartTagChecker [" + agentName + ", " + collectorHost + ", " + collectorPort + "]");
 		synchronized (sync) {
 			if (!agentList.contains(agentName)) {
 				agentList.add(agentName);
@@ -349,6 +349,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 	@Override
 	public void stopTagChecker(String agentName) {
+		log.info("StopTagChecker [" + agentName + "]");
 		synchronized (sync) {
 			agentTransportMap.remove(agentName);
 			agentClientMap.remove(agentName);
