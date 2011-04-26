@@ -68,11 +68,17 @@ public class ThriftEventSink extends EventSink.Base {
 
 
   public ThriftEventSink(String host, int port, boolean nonblocking, boolean useCheckpoint, int checkpointPort) {
+	  this(host, port, nonblocking, useCheckpoint, checkpointPort, "Unknown");
+  }
+  
+  public ThriftEventSink(String host, int port, boolean nonblocking, boolean useCheckpoint, int checkpointPort, 
+		  String logicalNodeName) {
 	  this.host = host;
 	  this.port = port;
 	  this.nonblocking = nonblocking;
 	  this.useCheckpoint = useCheckpoint;
 	  this.checkpointPort = checkpointPort;
+	  this.logicalNodeName = logicalNodeName;
   }
   
   public ThriftEventSink(String host, int port, boolean nonblocking, boolean useCheckpoint) {
