@@ -5,6 +5,9 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.cloudera.flume.agent.FlumeNode;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeConfiguration;
@@ -22,6 +25,7 @@ import com.cloudera.util.Clock;
 import com.google.common.base.Preconditions;
 
 public class CheckpointDeco extends EventSinkDecorator<EventSink> {
+	static Log LOG = LogFactory.getLog(CheckpointDeco.class);
 
 	public static final String ATTR_CK_TYPE = "CheckpointType";
 	public static final String ATTR_CK_TAG = "CheckpointTag";
@@ -59,7 +63,7 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 		if(offset != null) {
 			long o = ByteBuffer.wrap(offset).asLongBuffer().get();
 			//TODO 파일이름이 메타 정보로 없을 때 처리 
-			String fileName = ByteBuffer.wrap(e.get(TailSource.A_TAILSRCFILE)).toString();
+			String fileName = new String(ByteBuffer.wrap(e.get(TailSource.A_TAILSRCFILE)).array());
 			offsetMap.put(fileName, o);
 		} else {
 			super.append(e);
@@ -75,6 +79,7 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 
 	@Override
 	public void open() throws IOException, InterruptedException {
+		LOG.info("checkpointDeco open()");
 		super.open();
 		resetTag();
 		trigger.reset();
@@ -82,6 +87,7 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 	}
 	
 	private void rotate() throws IOException, InterruptedException {
+		LOG.info("start to rotate");
 		super.append(closeEvent());
 		cpManager.addPendingQ(new String(tag), logicalNodeName,
 				new HashMap<String, Long>(offsetMap));
@@ -90,10 +96,12 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 		offsetMap.clear();
 		trigger.reset();
 		super.append(openEvent());
+		LOG.info("Completed rotate");
 	}
 	
 	private void resetTag() {
 		tag = (logicalNodeName + Clock.nanos()).getBytes();
+		LOG.info("resetTag : " + tag);
 	}
 
 	public Event openEvent() {

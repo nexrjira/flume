@@ -5,6 +5,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -165,12 +166,11 @@ public class CheckPointManagerImpl implements CheckPointManager {
 							}
 						}
 					}
-					try {
-						Thread.sleep(checkTagIdPeriod);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+				}
+				try {
+					Thread.sleep(checkTagIdPeriod);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
 			log.info("ClientThread End; ");
@@ -238,13 +238,15 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	};
 
 	@Override
-	public void startServer() {
+	public void startServer() {	
+		log.info("Start CheckpoinServer : " + FlumeConfiguration.get().getCheckPointPort());
 		serverThread = new ServerThread();
 		serverThread.start();
 	}
 
 	@Override
 	public void startServer(int port) {
+		log.info("Start Checkpoint Server : " + port);
 		serverThread = new ServerThread(port);
 		serverThread.start();
 	}
@@ -372,7 +374,12 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	@Override
 	public void addPendingQ(String tagId, String agentName,
 			Map<String, Long> tagContent) {
-		// TODO Auto-generated method stub
+		
+		log.info("addpendingq : " + tagContent.size());
+		for(String key : tagContent.keySet()) {
+			log.info(key + " : " + tagContent.values());
+		}
+		
 		List<PendingQueueModel> tags;
 		PendingQueueModel pqm;
 		synchronized (sync) {
@@ -469,9 +476,9 @@ public class CheckPointManagerImpl implements CheckPointManager {
 								tmp.add(tags.get(t));
 
 							} else {
-								updateWaitingTagList(agentList.get(i), tags
-										.get(t).getTagId(), tags.get(t)
-										.getContents());
+//								updateWaitingTagList(agentList.get(i), tags
+//										.get(t).getTagId(), tags.get(t)
+//										.getContents());
 							}
 						}
 					}
@@ -541,7 +548,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		FileReader fileReader;
 		BufferedReader reader;
 		FileWriter fw;
-		BufferedWriter bw;
+		BufferedWriter bw = null;
 		StringBuilder contents;
 
 		Map<String, String> compareMap = new HashMap<String, String>();
@@ -585,7 +592,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 				fw = new FileWriter(ckpointFile);
 				bw = new BufferedWriter(fw);
 				bw.write(contents.toString());
-				bw.close();
+				log.info("content is : " + contents);
+//				bw.close();
 
 			} else {
 				fileReader = new FileReader(ckpointFile);
@@ -599,13 +607,20 @@ public class CheckPointManagerImpl implements CheckPointManager {
 				fw = new FileWriter(ckpointFile);
 				bw = new BufferedWriter(fw);
 				bw.write(contents.toString());
-				bw.close();
+				log.info("content is : " + contents);
+//				bw.close();
 				reader.close();
 			}
 
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			try {
+				bw.flush();
+				bw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 	}
@@ -676,7 +691,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		// 2. Pending QueueÏóê Ïò§Îûò ÏûàÏùÑÎïå checkpointÌååÏùºÏóê Ïì∞Í≥†
 		// retryÌïòÎèÑÎ°ù Ìï®.
 
-		cp.startClient();
+//		cp.startClient();
 		cp.startTagChecker("agent1", "localhost", 13421);
 		cp.startTagChecker("agent2", "localhost", 13421);
 		Thread.sleep(2000);
