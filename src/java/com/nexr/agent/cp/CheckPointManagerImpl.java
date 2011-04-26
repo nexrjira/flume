@@ -83,6 +83,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	TNonblockingServer.Args arguments;
 	TServer server;
 
+	private boolean clientStarted = false;
+
 	public CheckPointManagerImpl() {
 		// agentList = new ArrayList<String>();
 		// agentTagMap = new HashMap<String, List<PendingQueueModel>>();
@@ -178,11 +180,13 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	};
 
 	public void startClient() {
-		// TODO Auto-generated method stub
-		// CheckPoint Thrift client
-		clientThread = new ClientThread();
-		clientThread.start();
-		checkTagIdThread.start();
+		if(!clientStarted) {
+			log.info("Start client threads in CheckpointManager");
+			clientThread = new ClientThread();
+			clientThread.start();
+			checkTagIdThread.start();
+			clientStarted = true;
+		}
 	}
 
 	@Override
@@ -335,6 +339,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		// startClientÎ•º Ìò∏Ï∂ú ÌïòÏßÄ ÏïäÍ≥† Ïù¥ Î©îÏÜåÎìúÎ•º Ìò∏Ï∂ú ÌïòÏó¨
 		// Ïì∞Î†àÎìú ÎÇ¥ÏóêÏÑú startÎ•º Ìò∏Ï∂ú ÌïòÎèÑÎ°ù Ìï®.
 		log.info("StartTagChecker [" + agentName + ", " + collectorHost + ", " + collectorPort + "]");
+		startClient();
 		synchronized (sync) {
 			if (!agentList.contains(agentName)) {
 				agentList.add(agentName);
