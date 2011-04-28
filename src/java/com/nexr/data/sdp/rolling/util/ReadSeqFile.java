@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
@@ -18,6 +19,17 @@ public class ReadSeqFile {
 		FileSystem fs = FileSystem.get(URI.create(uri), conf);
 		Path path = new Path(uri);
 		
+		if (fs.getFileStatus(path).isDir()) {
+			for (FileStatus file : fs.listStatus(path)) {
+				readFile(conf, file.getPath());
+			}
+		} else {
+			readFile(conf, path);
+		}
+	}
+
+	private static void readFile(Configuration conf, Path path) throws IOException {
+		FileSystem fs = path.getFileSystem(conf);
 		SequenceFile.Reader reader = null;
 		try{
 			reader = new SequenceFile.Reader(fs, path, conf);
@@ -31,6 +43,5 @@ public class ReadSeqFile {
 		}finally{
 			IOUtils.closeStream(reader);
 		}
-		
 	}
 }

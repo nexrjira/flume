@@ -27,8 +27,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -40,7 +42,9 @@ import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.core.EventSinkDecorator;
+import com.cloudera.flume.core.EventSource;
 import com.cloudera.flume.core.connector.DirectDriver;
+import com.cloudera.flume.handlers.text.CustomDelimCursor.DelimMode;
 import com.cloudera.flume.reporter.ReportEvent;
 import com.cloudera.flume.reporter.aggregator.AccumulatorSink;
 import com.cloudera.util.Clock;
@@ -148,6 +152,22 @@ public class TestTailDirSource {
 	    } 
 	  return fileNames;
   }
+  
+  void genXmlFile(File tmpdir, String prefix, String rootElementName, int lines) throws IOException {
+	  List<String> fileNames = new ArrayList<String>();
+      File tmpfile = File.createTempFile(prefix, "bar", tmpdir);
+      fileNames.add(tmpfile.getName());
+      PrintWriter pw = new PrintWriter(tmpfile);
+      for (int i = 0; i < lines; i++) {
+	      StringBuilder xml = new StringBuilder()
+	      	.append("<").append(rootElementName).append(">")
+	      	.append("<name>dgkim").append(new Random().nextInt()).append("</name>")
+	      	.append("<age>").append(new Random().nextInt(100)).append("</age>")
+	      	.append("</").append(rootElementName).append(">");
+	      pw.println(xml.toString());
+      }
+      pw.close();
+  }
 
   /**
    * Setup sources and sinks, start the driver, then have new files appear,
@@ -170,6 +190,31 @@ public class TestTailDirSource {
 
     drv.stop();
     FileUtil.rmr(tmpdir);
+  }
+  
+  @Test
+	public void testDelimitedTextUsingBuilder() throws Exception {
+		File tmpdir = FileUtil.mktempdir();
+		String src = "tailDir(\"/home/dgkim84/SdpLogGen/temp/Transaction\", \".*\", false, 0, delim=\"</TransactionLog>\", delimMode=\"prev\")";
+		Context ctx = LogicalNodeContext.testingContext();
+	
+		EventSource source = FlumeBuilder.buildSource(ctx, src);
+		source.open();
+		System.out.println(new String(source.next().getBody()));
+		source.close();
+  }
+  
+  @Test
+  public void testDelimitedTextSource() throws Exception {
+	  File tmpdir = FileUtil.mktempdir();
+	  TailDirSource src = new TailDirSource(tmpdir, ".*", false, 0, "</Peoples>", DelimMode.INCLUDE_PREV);
+	  genXmlFile(tmpdir, "xxx", "Peoples", 10);
+	  
+	  src.open();
+	  Event event = src.next();
+	  src.close();
+	  FileUtil.rmr(tmpdir);
+	  Assert.assertTrue(new String(event.getBody()).contains("</Peoples>"));
   }
   
   @Test

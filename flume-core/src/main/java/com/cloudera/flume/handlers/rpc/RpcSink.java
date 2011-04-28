@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeConfiguration;
+import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.conf.SinkFactory.SinkBuilder;
 import com.cloudera.flume.core.EventSink;
 import com.cloudera.flume.handlers.avro.AvroEventSink;
@@ -104,7 +105,7 @@ public class RpcSink extends EventSink.Base {
 	           */
 	          if (FlumeConfiguration.get().getEventRPC().equals(
 	              FlumeConfiguration.RPC_TYPE_THRIFT)) {
-	            return new ThriftEventSink(host, port, false, true, cpPort);
+	            return new ThriftEventSink(host, port, false, true, cpPort, context.getValue(LogicalNodeContext.C_LOGICAL));
 	          }
 	          if (FlumeConfiguration.get().getEventRPC().equals(
 	              FlumeConfiguration.RPC_TYPE_AVRO)) {

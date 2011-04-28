@@ -65,7 +65,7 @@ public class Cursor {
   Cursor(BlockingQueue<Event> sync, File f) {
     this(sync, f, 0, 0, 0);
   }
-
+  
   Cursor(BlockingQueue<Event> sync, File f, long lastReadOffset,
       long lastFileLen, long lastMod) {
     this(sync, f, lastReadOffset, lastFileLen, lastMod, false);
@@ -73,6 +73,7 @@ public class Cursor {
   
   Cursor(BlockingQueue<Event> sync, File f, long lastReadOffset,
 	      long lastFileLen, long lastMod, boolean useCheckpoint) {
+	  LOG.info("create CUrsor : useCheckpoint : " + useCheckpoint);
 	  this.sync = sync;
 	  this.file = f;
 	  this.lastChannelPos = lastReadOffset;
