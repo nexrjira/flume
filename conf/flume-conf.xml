@@ -303,5 +303,9 @@ configuration values placed in flume-site.xml.  -->
     client times out a connection</description>
   </property>
 
+  <property>
+    <name>checkpoint.file.path</name>
+    <value>/tmp/flume-${user.name}/checkpoint</value>
+  </property>
   
 </configuration>

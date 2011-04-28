@@ -68,6 +68,8 @@ import com.cloudera.flume.handlers.debug.TextFileSink;
 import com.cloudera.flume.handlers.endtoend.AckChecksumChecker;
 import com.cloudera.flume.handlers.endtoend.AckChecksumInjector;
 import com.cloudera.flume.handlers.endtoend.ValueDecorator;
+import com.cloudera.flume.handlers.filter.TextFilter;
+import com.cloudera.flume.handlers.filter.XmlFilter;
 import com.cloudera.flume.handlers.hdfs.CustomDfsSink;
 import com.cloudera.flume.handlers.hdfs.DFSEventSink;
 import com.cloudera.flume.handlers.hdfs.EscapedCustomDfsSink;
@@ -220,6 +222,9 @@ public class SinkFactoryImpl extends SinkFactory {
       { "mult", MultiplierDecorator.builder() },
       { "delay", DelayDecorator.builder() },
       { "choke", ChokeDecorator.builder() },
+
+      { "xmlFilter", XmlFilter.builder() },
+      { "textFilter", TextFilter.builder() },
 
   };
 

@@ -40,7 +40,7 @@ public class WaitingQueueModel {
 	
 	public void updateWaitedTime(long waitedTime) {
 		this.waitedTime = this.waitedTime + waitedTime;
-		System.out.println(this.waitedTime);
+		System.out.println("Wait Response " + this.tagId + " " + this.waitedTime);
 	}
 
 	
