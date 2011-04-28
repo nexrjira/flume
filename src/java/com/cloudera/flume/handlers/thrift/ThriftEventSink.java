@@ -112,7 +112,9 @@ public class ThriftEventSink extends EventSink.Base {
       transport = null;
       LOG.info("ThriftEventSink on port " + port + " closed");
     }
-    FlumeNode.getInstance().getCheckPointManager().stopTagChecker(logicalNodeName);
+    if(useCheckpoint) {
+    	FlumeNode.getInstance().getCheckPointManager().stopTagChecker(logicalNodeName);
+    }
   }
 
   @Override
@@ -140,8 +142,11 @@ public class ThriftEventSink extends EventSink.Base {
       throw new IOException("Failed to open thrift event sink at " + host + ":"
           + port + " : " + e.getMessage());
     }
-    FlumeNode.getInstance().getCheckPointManager().setCollectorHost(host);
-    FlumeNode.getInstance().getCheckPointManager().startTagChecker(logicalNodeName, host, checkpointPort);
+    
+    if(useCheckpoint) {
+    	FlumeNode.getInstance().getCheckPointManager().setCollectorHost(host);
+    	FlumeNode.getInstance().getCheckPointManager().startTagChecker(logicalNodeName, host, checkpointPort);
+    }
   }
 
   @Override
@@ -211,7 +216,7 @@ public class ThriftEventSink extends EventSink.Base {
 	        if (args.length >= 3) {
 	        	cpPort = Integer.parseInt(args[2]);
 	        }
-	        return new ThriftEventSink(host, port, false, true, cpPort);
+	        return new ThriftEventSink(host, port, false, true, cpPort, logicalNodeName);
 		}
 	  };
   }

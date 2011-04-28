@@ -294,7 +294,9 @@ public class TestThriftSinks implements ExampleData {
 	  final int cpPort = 9999;
 	  final String host = "localhost";
 	  
-	  Context ctx = LogicalNodeContext.testingContext();
+	  Context ctx = new LogicalNodeContext(NODE_NAME, NODE_NAME);
+	  
+	  
 	  
 	  CheckPointManager cpManager = Mockito.mock(CheckPointManager.class);
 	  BenchmarkHarness.setupFlumeNode(null, null, null, null, null, cpManager);
@@ -313,7 +315,37 @@ public class TestThriftSinks implements ExampleData {
 			  tes.close();
 		  }
 	  }
-	  
   }
 
+  /**
+   * Checkpoint mode가 아닌 ThriftSink는 TagChecker의  start/stop이 호출 되면 안된다. 
+   * @throws IOException
+   * @throws InterruptedException
+   */
+  @Test
+  public void testThrfitOpenAndClose() throws IOException, InterruptedException {
+	  final int cpPort = 9999;
+	  final String host = "localhost";
+	  
+	  Context ctx = LogicalNodeContext.testingContext();
+	  
+	  CheckPointManager cpManager = Mockito.mock(CheckPointManager.class);
+	  BenchmarkHarness.setupFlumeNode(null, null, null, null, null, cpManager);
+	  
+	  ThriftEventSource tes = null;
+	  try {
+		  tes = new ThriftEventSource(54321);
+		  tes.open();
+		  
+		  EventSink snk = ThriftEventSink.builder().build(ctx, host, "54321");
+		  snk.open();
+		  Mockito.verify(cpManager, Mockito.never()).startTagChecker(ctx.getValue(LogicalNodeContext.C_LOGICAL), host, cpPort);
+		  snk.close();
+		  Mockito.verify(cpManager, Mockito.never()).stopTagChecker(ctx.getValue(LogicalNodeContext.C_LOGICAL));
+	  } finally {
+		  if (tes != null) {
+			  tes.close();
+		  }
+	  }
+  }
 }

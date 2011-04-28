@@ -222,6 +222,8 @@ public class SinkFactoryImpl extends SinkFactory {
       { "mult", MultiplierDecorator.builder() },
       { "delay", DelayDecorator.builder() },
       { "choke", ChokeDecorator.builder() },
+      
+      { "xmlFilter", XmlFilter.builder() },
 
       { "xmlFilter", XmlFilter.builder() },
       { "textFilter", TextFilter.builder() },
