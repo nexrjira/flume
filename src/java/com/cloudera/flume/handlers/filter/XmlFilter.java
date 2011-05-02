@@ -40,27 +40,6 @@ public class XmlFilter extends EventSinkDecorator<EventSink> {
 		super.append(e);
 	}
 
-//	static final String SYS_H_CORP_ID = "SystemHeader.CorpID";
-//	static final String SYS_H_SYSTEM_ID = "SystemHeader.SystemId";
-//	static final String SYS_H_LOG_TYPE = "SystemHeader.LogType";
-//	static final String SYS_H_USER_ID = "SystemHeader.UserId";
-//	static final String SYS_H_SCREEN_ID = "SystemHeader.ScreenId";
-//	static final String DATA_H_TRANSACTION_ID = "DataHeader.TransactionId";
-//	static final String DATA_H_SEQ_NUMBER = "DataHeader.SeqNumber";
-//	static final String DATA_H_TIMESTAMP = "DataHeader.Timestamp";
-//	static final String DATA_H_MODULE_TYPE = "DataHeader.ModuleType";
-//	static final String DATA_H_SERVER_NAME = "DataHeader.ServerName";
-//	static final String DATA_H_SERVER_IP = "DataHeader.ServerIp";
-//	static final String DATA_H_OBJECT_NAME = "DataHeader.";
-//	static final String DATA_H_METHOD_NAME = "DataHeader.";
-//	static final String DATA_H_COUNTER_PART_NAME = "DataHeader.";
-//	static final String DATA_H_COUNTER_PART_IP = "DataHeader.";
-//	static final String DATA_H_SERVICE_NAME = "DataHeader.";
-//	static final String BODY_LOG_TYPE = "Body.";
-//	static final String BODY_RESULT_CODE = "Body.";
-//	static final String BODY_RESULT_DESC = "Body.";
-//	static final String BODY_PAYLOAD = "Body.";
-
 	static final String SYSTEM_HEADER = "SystemHeader";
 	static final String DATA_HEADER = "DataHeader";
 	static final String BODY = "Body";
