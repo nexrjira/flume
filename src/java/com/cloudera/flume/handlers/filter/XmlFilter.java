@@ -30,7 +30,6 @@ public class XmlFilter extends EventSinkDecorator<EventSink> {
 
 	@Override
 	public void append(Event e) throws IOException, InterruptedException {
-		LOG.info("xml data : " + new String(e.getBody()));
 		ByteArrayInputStream bis = new ByteArrayInputStream(e.getBody());
 		try {
 			sax.parse(bis, new TransactionXmlHandler(e));

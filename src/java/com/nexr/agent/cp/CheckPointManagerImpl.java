@@ -114,6 +114,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		agentCollectorInfo = Collections
 				.synchronizedMap(new HashMap<String, CollectorInfo>());
 	}
+	
 
 	class ClientThread extends Thread {
 		volatile boolean done = false;
@@ -643,6 +644,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
+<<<<<<< HEAD
 		CheckPointManager cp = FlumeNode.getInstance().getCheckPointManager();
 
 		// 1. Agent Retry Î∞è ÏÑúÎ≤Ñ Ïó∞Í≤∞ ÌÖåÏä§Ìä∏
@@ -835,6 +837,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		tagIds.add(tagId4);
 		cp.addCollectorCompleteList(tagIds);
 
+=======
+>>>>>>> d474b26a2dd5b5b81726e685490a9a252de29c3a
 	}
 
 }
