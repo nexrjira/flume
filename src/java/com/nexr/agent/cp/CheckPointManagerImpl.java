@@ -5,6 +5,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -82,6 +83,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	TNonblockingServerSocket serverSocket;
 	TNonblockingServer.Args arguments;
 	TServer server;
+
+	private boolean clientStarted = false;
 
 	public CheckPointManagerImpl() {
 		// agentList = new ArrayList<String>();
@@ -163,12 +166,11 @@ public class CheckPointManagerImpl implements CheckPointManager {
 							}
 						}
 					}
-					try {
-						Thread.sleep(checkTagIdPeriod);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+				}
+				try {
+					Thread.sleep(checkTagIdPeriod);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
 			log.info("ClientThread End; ");
@@ -178,11 +180,13 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	};
 
 	public void startClient() {
-		// TODO Auto-generated method stub
-		// CheckPoint Thrift client
-		clientThread = new ClientThread();
-		clientThread.start();
-		checkTagIdThread.start();
+		if(!clientStarted) {
+			log.info("Start client threads in CheckpointManager");
+			clientThread = new ClientThread();
+			clientThread.start();
+			checkTagIdThread.start();
+			clientStarted = true;
+		}
 	}
 
 	@Override
@@ -234,13 +238,15 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	};
 
 	@Override
-	public void startServer() {
+	public void startServer() {	
+		log.info("Start CheckpoinServer : " + FlumeConfiguration.get().getCheckPointPort());
 		serverThread = new ServerThread();
 		serverThread.start();
 	}
 
 	@Override
 	public void startServer(int port) {
+		log.info("Start Checkpoint Server : " + port);
 		serverThread = new ServerThread(port);
 		serverThread.start();
 	}
@@ -334,7 +340,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 			int collectorPort) {
 		// startClientÎ•º Ìò∏Ï∂ú ÌïòÏßÄ ÏïäÍ≥† Ïù¥ Î©îÏÜåÎìúÎ•º Ìò∏Ï∂ú ÌïòÏó¨
 		// Ïì∞Î†àÎìú ÎÇ¥ÏóêÏÑú startÎ•º Ìò∏Ï∂ú ÌïòÎèÑÎ°ù Ìï®.
-
+		log.info("StartTagChecker [" + agentName + ", " + collectorHost + ", " + collectorPort + "]");
+		startClient();
 		synchronized (sync) {
 			if (!agentList.contains(agentName)) {
 				agentList.add(agentName);
@@ -349,6 +356,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 
 	@Override
 	public void stopTagChecker(String agentName) {
+		log.info("StopTagChecker [" + agentName + "]");
 		synchronized (sync) {
 			agentTransportMap.remove(agentName);
 			agentClientMap.remove(agentName);
@@ -366,7 +374,12 @@ public class CheckPointManagerImpl implements CheckPointManager {
 	@Override
 	public void addPendingQ(String tagId, String agentName,
 			Map<String, Long> tagContent) {
-		// TODO Auto-generated method stub
+		
+		log.info("addpendingq : " + tagContent.size());
+		for(String key : tagContent.keySet()) {
+			log.info(key + " : " + tagContent.values());
+		}
+		
 		List<PendingQueueModel> tags;
 		PendingQueueModel pqm;
 		synchronized (sync) {
@@ -463,9 +476,9 @@ public class CheckPointManagerImpl implements CheckPointManager {
 								tmp.add(tags.get(t));
 
 							} else {
-								updateWaitingTagList(agentList.get(i), tags
-										.get(t).getTagId(), tags.get(t)
-										.getContents());
+//								updateWaitingTagList(agentList.get(i), tags
+//										.get(t).getTagId(), tags.get(t)
+//										.getContents());
 							}
 						}
 					}
@@ -552,7 +565,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		FileReader fileReader;
 		BufferedReader reader;
 		FileWriter fw;
-		BufferedWriter bw;
+		BufferedWriter bw = null;
 		StringBuilder contents;
 
 		Map<String, String> compareMap = new HashMap<String, String>();
@@ -596,7 +609,8 @@ public class CheckPointManagerImpl implements CheckPointManager {
 				fw = new FileWriter(ckpointFile);
 				bw = new BufferedWriter(fw);
 				bw.write(contents.toString());
-				bw.close();
+				log.info("content is : " + contents);
+//				bw.close();
 
 			} else {
 				fileReader = new FileReader(ckpointFile);
@@ -610,13 +624,20 @@ public class CheckPointManagerImpl implements CheckPointManager {
 				fw = new FileWriter(ckpointFile);
 				bw = new BufferedWriter(fw);
 				bw.write(contents.toString());
-				bw.close();
+				log.info("content is : " + contents);
+//				bw.close();
 				reader.close();
 			}
 
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			try {
+				bw.flush();
+				bw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 	}
@@ -782,7 +803,7 @@ public class CheckPointManagerImpl implements CheckPointManager {
 		// log.info("stopTagCkecker");
 		// cp.stopTagChecker("agent1");
 
-		cp.startClient();
+//		cp.startClient();
 		cp.startTagChecker("agent1", "localhost", 13421);
 		cp.startTagChecker("agent2", "localhost", 13421);
 		Thread.sleep(2000);

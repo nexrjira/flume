@@ -5,6 +5,9 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.cloudera.flume.agent.FlumeNode;
 import com.cloudera.flume.conf.Context;
 import com.cloudera.flume.conf.FlumeConfiguration;
@@ -22,6 +25,7 @@ import com.cloudera.util.Clock;
 import com.google.common.base.Preconditions;
 
 public class CheckpointDeco extends EventSinkDecorator<EventSink> {
+	static Log LOG = LogFactory.getLog(CheckpointDeco.class);
 
 	public static final String ATTR_CK_TYPE = "CheckpointType";
 	public static final String ATTR_CK_TAG = "CheckpointTag";
@@ -34,7 +38,12 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 	private CheckPointManager cpManager;
 	private String logicalNodeName;
 	
+	private boolean sentStart = false;
+	private boolean isAlive = false;
+	
 	private RollTrigger trigger;
+
+	private long maxAge;
 		
 	public CheckpointDeco(EventSink s) {
 		this(s, null, null, 10000l);
@@ -46,6 +55,7 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 		this.offsetMap = new HashMap<String, Long>();
 		this.cpManager = cpManager;
 		this.logicalNodeName = logicalNodeName;
+		this.maxAge = maxAge;
 		this.trigger = new TimeTrigger(maxAge);
 	}
 
@@ -59,7 +69,7 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 		if(offset != null) {
 			long o = ByteBuffer.wrap(offset).asLongBuffer().get();
 			//TODO 파일이름이 메타 정보로 없을 때 처리 
-			String fileName = ByteBuffer.wrap(e.get(TailSource.A_TAILSRCFILE)).toString();
+			String fileName = new String(ByteBuffer.wrap(e.get(TailSource.A_TAILSRCFILE)).array());
 			offsetMap.put(fileName, o);
 		} else {
 			super.append(e);
@@ -68,32 +78,47 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 
 	@Override
 	public void close() throws IOException, InterruptedException {
-		super.append(closeEvent());
-		cpManager.addPendingQ(new String(tag), logicalNodeName, offsetMap);
+		LOG.info("checkpoint close()");
+		sendEndEvent();
 		super.close();
 	}
 
 	@Override
 	public void open() throws IOException, InterruptedException {
+		LOG.info("checkpointDeco open()");
 		super.open();
 		resetTag();
 		trigger.reset();
 		super.append(openEvent());
 	}
 	
-	private void rotate() throws IOException, InterruptedException {
+	private void sendEndEvent() throws IOException, InterruptedException {
 		super.append(closeEvent());
-		cpManager.addPendingQ(new String(tag), logicalNodeName,
-				new HashMap<String, Long>(offsetMap));
-		
-		resetTag();
+		if(offsetMap.size() > 0) {
+			cpManager.addPendingQ(new String(tag), logicalNodeName,
+					new HashMap<String, Long>(offsetMap));
+			resetTag();
+		}
 		offsetMap.clear();
 		trigger.reset();
+	}
+	
+	/**
+	 * 정해진 시간 마다 EndEvent를 보내고 현재 파일 오프셋 정보를 Manager 에게 보낸다. 
+	 * 그리고 새로운 태그로 StartEvent를 보낸다. 
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	private void rotate() throws IOException, InterruptedException {
+		LOG.info("start to rotate");
+		sendEndEvent();		
 		super.append(openEvent());
+		LOG.info("Completed rotate");
 	}
 	
 	private void resetTag() {
 		tag = (logicalNodeName + Clock.nanos()).getBytes();
+		LOG.info("resetTag : " + new String(tag));
 	}
 
 	public Event openEvent() {
@@ -135,5 +160,45 @@ public class CheckpointDeco extends EventSinkDecorator<EventSink> {
 						FlumeNode.getInstance().getCheckPointManager(), delayMillis);
 			}
 		};
+	}
+	
+	void checkAlive() {
+		if(isAlive == true) {
+			isAlive = false;
+		} else {
+			//send end event
+			
+		}
+		
+		Thread t = new TimeChecker(2000l);
+		try {
+			t.sleep(2000l);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	class TimeChecker extends Thread {
+
+		boolean doing = true;
+		long checkLatencyMs;
+		
+		TimeChecker(long checkLatencyMs) {
+			this.checkLatencyMs = checkLatencyMs;
+		}
+		
+		@Override
+		public void run() {
+			while(doing) {
+				checkAlive();
+				try {
+					Thread.sleep(checkLatencyMs);
+
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+		
 	}
 }

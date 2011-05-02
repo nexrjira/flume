@@ -52,7 +52,6 @@ public class CustomDelimCursor extends Cursor {
 	    this.regexDelim = regex;
 	    this.pat = Pattern.compile(regex);
 	    this.delimMode = h;
-
   }
   
   CustomDelimCursor(BlockingQueue<Event> sync, File f, long lastReadOffset,
@@ -66,6 +65,15 @@ public class CustomDelimCursor extends Cursor {
     this.pat = Pattern.compile(regex);
     this.delimMode = h;
   }
+  
+  CustomDelimCursor(BlockingQueue<Event> sync, File f, String regex, DelimMode h, 
+		  boolean useCheckpoint) {
+	    super(sync, f);
+	    super.useCheckpoint = useCheckpoint;
+	    this.regexDelim = regex;
+	    this.pat = Pattern.compile(regex);
+	    this.delimMode = h;
+	  }
 
   /**
    * This is a cheat class to present a CharSequence interface backed by a

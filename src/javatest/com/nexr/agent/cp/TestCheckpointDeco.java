@@ -69,6 +69,30 @@ public class TestCheckpointDeco {
 		Assert.assertEquals(7, snk.getCount());
 	}
 	
+	/**
+	* 
+	 * @throws InterruptedException 
+	 * @throws IOException 
+	 * 
+	 */
+	@Test
+	public void testFlush() throws IOException, InterruptedException {
+		MemorySink snk = new MemorySink("Sink");
+		CheckPointManager manager = mock(CheckPointManagerImpl.class);
+		
+		CheckpointDeco deco = new CheckpointDeco(snk, "node1", manager, 2000l);
+		
+		deco.open(); // send start event 1
+		deco.append(new EventImpl()); // send data event 2
+		deco.append(new EventImpl()); // send data event 3
+		deco.append(new EventImpl()); // send data event 4
+		Clock.sleep(3000l);
+		
+		//rotate // send close event 5
+		
+		Assert.assertEquals(5, snk.getCount());
+	}
+	
 	class MemorySink extends AccumulatorSink {
 		
 		List<Event> eventList = new ArrayList<Event>();

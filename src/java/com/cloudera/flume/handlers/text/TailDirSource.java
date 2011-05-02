@@ -80,6 +80,8 @@ public class TailDirSource extends EventSource.Base {
   final public static String A_SUBDIRSADDED = "subdirsAdded";
   final public static String A_SUBDIRSDELETED = "subdirsDeleted";
 
+  private boolean useCheckpoint = false;
+  
   public TailDirSource(File f, String regex) {
     this(f, regex, false);
   }
@@ -131,6 +133,7 @@ public class TailDirSource extends EventSource.Base {
 	  } else {
 		  this.checkPointOffsetMap = checkPointManager.getOffset(logicalNodeName);
 	  }
+	  this.useCheckpoint = true;
   }
   
   /**
@@ -211,7 +214,7 @@ public class TailDirSource extends EventSource.Base {
         		  
         		  checkPointOffsetMap.remove(f.getName());
         	  } else {
-        		  c = new Cursor(tail.sync, f);
+        		  c = new Cursor(tail.sync, f, 0, 0, 0, useCheckpoint);
         	  }
           }
         } else {
