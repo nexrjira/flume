@@ -1,5 +1,5 @@
 /**
- * Licensed to Cloudera, Inc. under one
+/ * Licensed to Cloudera, Inc. under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  Cloudera, Inc. licenses this file
@@ -177,7 +177,7 @@ public class DFSEventSink extends EventSink.Base {
           // TODO (jon) make this message easier.
           throw new IllegalArgumentException(
               "usage: dfs(\"[(hdfs|file|s3n|...)://namenode[:port]]/path\" " +
-              "{, keyClassName=\"KeyClassName\", valueClassName=\"ValueClassName\")");
+              "{, keyClassName=\"KeyClassName\", valueClassName=\"ValueClassName\"}) ");
         }
         
         String keyClassName = context.getValue(KEY_CLASS_NAME);
