@@ -2,6 +2,7 @@ package com.cloudera.flume.handlers.filter;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Map;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -72,6 +73,7 @@ public class XmlFilter extends EventSinkDecorator<EventSink> {
 				parentTag = qName;
 			} else {
 				currentTag = qName;
+				text = null;
 			}
 			super.startElement(uri, localName, qName, attributes);
 		}
@@ -83,7 +85,9 @@ public class XmlFilter extends EventSinkDecorator<EventSink> {
 			if (qName.equals(SYSTEM_HEADER) || qName.equals(DATA_HEADER)
 					|| qName.equals(BODY) || qName.equals(TRANSACTION_LOG)) {
 			} else {
-				e.set(parentTag + "." + currentTag, text.getBytes());
+				if(text != null) {
+					e.set(parentTag + "." + currentTag, text.getBytes());
+				} 
 			}
 
 		}
@@ -91,7 +95,7 @@ public class XmlFilter extends EventSinkDecorator<EventSink> {
 		@Override
 		public void characters(char[] ch, int start, int length)
 				throws SAXException {
-			text = new String(ch, start, length);
+			text = new String(ch, start, length).trim();
 			super.characters(ch, start, length);
 		}
 	}

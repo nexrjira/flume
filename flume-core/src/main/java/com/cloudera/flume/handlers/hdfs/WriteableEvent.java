@@ -47,7 +47,7 @@ import com.google.common.base.Preconditions;
 public class WriteableEvent extends EventBaseImpl implements Writable {
   final static long MAX_BODY_SIZE = FlumeConfiguration.get().getEventMaxSizeBytes();
 
-  private Event e;
+  protected Event e;
 
   /**
    * This creates an empty event. Used as a container for unmarshalling data

@@ -1,5 +1,5 @@
 /**
- * Licensed to Cloudera, Inc. under one
+/ * Licensed to Cloudera, Inc. under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  Cloudera, Inc. licenses this file
@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.SequenceFile.Writer;
+import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,8 @@ import com.google.common.base.Preconditions;
  */
 public class DFSEventSink extends EventSink.Base {
   static final Logger LOG = LoggerFactory.getLogger(DFSEventSink.class);
+  protected static final String KEY_CLASS_NAME = "keyClassName";
+  protected static final String VALUE_CLASS_NAME = "valueClassName";
   String path;
   Writer writer = null;
   // We keep a - potentially unbounded - set of writers around to deal with
@@ -54,10 +57,39 @@ public class DFSEventSink extends EventSink.Base {
   // Used to short-circuit around doing regex matches when we know there are
   // no templates to be replaced.
   boolean shouldSub = false;
+  
+  Class<? extends Writable> keyClz;
+  Class<? extends Writable> valueClz;
 
   public DFSEventSink(String path) {
     this.path = path;
     shouldSub = Event.containsTag(path);
+  }
+  
+  @SuppressWarnings("unchecked")
+  public DFSEventSink(String path, String keyClzName, String valueClzName) {
+	  this(path);
+	  try {
+		  if(keyClzName != null && keyClzName.length() > 0) {
+			  keyClz =  (Class<? extends Writable>) Class.forName(keyClzName);
+		  } else {
+			  keyClz = WriteableEventKey.class;
+		  }
+	  } catch (ClassNotFoundException e) {
+		  LOG.error(keyClzName + " is not found : " + e.getMessage());
+		  LOG.info("replace default key class : " + WriteableEventKey.class.getName());
+		  keyClz = WriteableEventKey.class;
+	  }
+	    
+	  try {
+		  if(valueClzName != null & valueClzName.length() > 0) {
+			  valueClz = (Class<? extends Writable>) Class.forName(valueClzName);
+		  } else {
+			  valueClz = WriteableEvent.class;
+		  }	
+	  } catch (ClassNotFoundException e) {
+		  valueClz = WriteableEvent.class;
+	  }
   }
 
   protected Writer openWriter(String p) throws IOException {
@@ -66,9 +98,8 @@ public class DFSEventSink extends EventSink.Base {
 
     Path dstPath = new Path(p);
     FileSystem hdfs = dstPath.getFileSystem(conf);
-
-    Writer w = SequenceFile.createWriter(hdfs, conf, dstPath,
-        WriteableEventKey.class, WriteableEvent.class);
+        
+    Writer w = SequenceFile.createWriter(hdfs, conf, dstPath, keyClz, valueClz);
 
     return w;
   }
@@ -92,7 +123,22 @@ public class DFSEventSink extends EventSink.Base {
 
     Preconditions.checkState(w != null,
         "Attempted to append to a null dfs writer!");
-    w.append(new WriteableEventKey(e), new WriteableEvent(e));
+    
+    Writable key = null;
+    try {
+		key = keyClz.getConstructor(Event.class).newInstance(e);
+	} catch (Exception ex) {
+		LOG.error(keyClz.getName() + " dose not have contructor with parameter (Event)", ex);
+	}
+	
+	Writable value = null;
+	try {
+		value = valueClz.getConstructor(Event.class).newInstance(e);
+	} catch (Exception ex) {
+		LOG.error(valueClz.getName() + " dose not have contructor with parameter (Event)", ex);
+	}
+	
+    w.append(key, value);
     super.append(e);
   }
 
@@ -130,9 +176,18 @@ public class DFSEventSink extends EventSink.Base {
         if (args.length != 1) {
           // TODO (jon) make this message easier.
           throw new IllegalArgumentException(
-              "usage: dfs(\"[(hdfs|file|s3n|...)://namenode[:port]]/path\")");
+              "usage: dfs(\"[(hdfs|file|s3n|...)://namenode[:port]]/path\" " +
+              "{, keyClassName=\"KeyClassName\", valueClassName=\"ValueClassName\"}) ");
         }
-        return new DFSEventSink(args[0]);
+        
+        String keyClassName = context.getValue(KEY_CLASS_NAME);
+        String valueClassName = context.getValue(VALUE_CLASS_NAME);
+        if(keyClassName != null && keyClassName.length() > 0 
+        		&& valueClassName != null && valueClassName.length() >0) {
+        	return new DFSEventSink(args[0], keyClassName, valueClassName);
+        } else {
+        	return new DFSEventSink(args[0]);
+        }
       }
     };
   }
