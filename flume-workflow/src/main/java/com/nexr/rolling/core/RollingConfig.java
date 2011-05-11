@@ -21,7 +21,7 @@ public class RollingConfig {
 	public static final String NOTIFY_EMAIL = "notify.email";
 
 	public static final String HOURLY_SCHEDULE = "hourly.schedule";
-	public static final String DAILY_SCHEDULE = "month.schedule";
+	public static final String DAILY_SCHEDULE = "daily.schedule";
 
 	private String rawPath;
 	private String hourlyMrResultPath;
