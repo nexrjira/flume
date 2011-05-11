@@ -7,9 +7,9 @@ import com.cloudera.flume.core.Event;
 
 public class LogKey extends DetailEventKey {
 	
-	public static final String DATA_TYPE = "dataType";
-	public static final String TIME = "time";
-	public static final String LOG_ID= "logId";
+	public static final String DATA_TYPE = "SystemHeader.LogType";
+	public static final String TIME = "DataHeader.Timestamp";
+	public static final String LOG_ID= "DataHeader.TransactionID";
 
 	public LogKey(Event e) {
 		super(e);
@@ -18,5 +18,9 @@ public class LogKey extends DetailEventKey {
 		keys.add(TIME);
 		keys.add(LOG_ID);
 		init(keys);
+	}
+	
+	public LogKey() {
+		super();
 	}
 }

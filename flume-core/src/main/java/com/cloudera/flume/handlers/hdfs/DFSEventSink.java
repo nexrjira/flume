@@ -128,14 +128,14 @@ public class DFSEventSink extends EventSink.Base {
     try {
 		key = keyClz.getConstructor(Event.class).newInstance(e);
 	} catch (Exception ex) {
-		LOG.error(keyClz.getName() + "dose not have contructor with parameter (Event)", ex);
+		LOG.error(keyClz.getName() + " dose not have contructor with parameter (Event)", ex);
 	}
 	
 	Writable value = null;
 	try {
 		value = valueClz.getConstructor(Event.class).newInstance(e);
 	} catch (Exception ex) {
-		LOG.error(valueClz.getName() + "dose not have contructor with parameter (Event)", ex);
+		LOG.error(valueClz.getName() + " dose not have contructor with parameter (Event)", ex);
 	}
 	
     w.append(key, value);

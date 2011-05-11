@@ -38,6 +38,11 @@ public class DetailEventKey extends WriteableEventKey {
 		this.e = e;
 	}
 	
+	public DetailEventKey() {
+		this.e = null;
+		this.keyMap = null;
+	}
+	
 	protected void init(List<String> keys) {
 		Preconditions.checkNotNull(e, "Event is null");
 		Preconditions.checkNotNull(keys, "Key list are empty");
