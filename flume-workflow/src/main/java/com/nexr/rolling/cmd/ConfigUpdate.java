@@ -23,10 +23,16 @@ public class ConfigUpdate {
 
 	File configFile = null;
 	StringBuilder contents;
+	
+	private String rollingRootPath = null;
+	private String rollingConfigPath = null;
 
 	public void updateConfig(String config) {
 		configFile = new File(config);
-
+		
+		rollingRootPath = conf.getRollingRootPath();
+		rollingConfigPath = conf.getRollingRootPath() + conf.getRollingConfigPath();
+		
 		try {
 			FileReader fileReader = new FileReader(configFile);
 			BufferedReader reader = new BufferedReader(fileReader);
@@ -44,11 +50,11 @@ public class ConfigUpdate {
 		zkClient = new ZkClient(conf.getZookeeperServers(), 30000,
 				conf.getZookeeperSessionTimeout());
 		zkClient.getEventLock().lock();
-		if (!zkClient.exists("/rolling/config")) {
-			zkClient.createPersistent("/rolling");
-			zkClient.createPersistent("/rolling/config", contents.toString());
+		if (!zkClient.exists(rollingConfigPath)) {
+			zkClient.createPersistent(rollingRootPath);
+			zkClient.createPersistent(rollingConfigPath, contents.toString());
 		} else {
-			zkClient.writeData("/rolling/config", contents.toString());
+			zkClient.writeData(rollingConfigPath, contents.toString());
 		}
 		log.info("Configuration " + contents.toString());
 	}

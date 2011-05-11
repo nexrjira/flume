@@ -11,6 +11,7 @@ public class RollingConfiguration extends Configuration {
 	public static final String ROLLING_ROOT_PATH = "rolling.root.path";
 	public static final String ROLLING_CONFIG_PATH = "rolling.config.path";
 	public static final String ROLLING_MEMBER_PATH = "rolling.member.path";
+	public static final String ROLLING_MASTER_PATH = "rolling.master.path";
 	
 	public static RollingConfiguration getInstance() {
 		return conf;
@@ -46,6 +47,10 @@ public class RollingConfiguration extends Configuration {
 	
 	public String getRollingMemberPath() {
 		return getProperty(ROLLING_MEMBER_PATH);
+	}
+	
+	public String getRollingMasterPath() {
+		return getProperty(ROLLING_MASTER_PATH);
 	}
 
 	
