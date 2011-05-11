@@ -7,6 +7,10 @@ public class RollingConfig {
 	private static final Logger log = Logger.getLogger(RollingConfig.class);
 
 	public static final String RAW_PATH = "raw.path";
+	
+	public static final String POST_MR_RESULT_PATH = "post.mr.result.path";
+	public static final String POST_MR_INPUT_PATH = "post.mr.input.path";
+	public static final String POST_MR_OUTPUT_PATH = "post.mr.output.path";
 
 	public static final String HOURLY_MR_RESULT_PATH = "hourly.mr.result.path";
 	public static final String HOURLY_MR_INPUT_PATH = "hourly.mr.input.path";
@@ -20,21 +24,36 @@ public class RollingConfig {
 	public static final String RETRY_DELAY = "retry.delay.time";
 	public static final String NOTIFY_EMAIL = "notify.email";
 
+	public static final String POST_SCHEDULE = "post.schedule";
 	public static final String HOURLY_SCHEDULE = "hourly.schedule";
 	public static final String DAILY_SCHEDULE = "daily.schedule";
+	
+	public static final String DEDUP_MR_INPUT_PATH = "dedup.mr.input.path";
+	public static final String DEDUP_MR_OUTPUT_PATH = "dedup.mr.output.path";
 
 	private String rawPath;
+	private String postMrResultPath;
+	private String postMrInputPath;
+	private String postMrOutputPath;
+	
 	private String hourlyMrResultPath;
 	private String hourlyMrInputPath;
 	private String hourlyMrOutputPath;
+	
 	private String dailyMrResultPath;
 	private String dailyMrInputPath;
 	private String dailyMrOutputPath;
+	
 	private int retryCount;
 	private long retryDelaytime;
 	private String notifyEmail;
+	
+	private String postSchedule;
 	private String hourlySchedule;
 	private String dailySchedule;
+	
+	private String dedupMrInputPath;
+	private String dedupMrOutputPath;
 
 	public String getRawPath() {
 		return rawPath;
@@ -132,9 +151,59 @@ public class RollingConfig {
 		this.dailySchedule = dailySchedule;
 	}
 
+	public String getPostMrResultPath() {
+		return postMrResultPath;
+	}
+
+	public void setPostMrResultPath(String postMrResultPath) {
+		this.postMrResultPath = postMrResultPath;
+	}
+
+	public String getPostMrInputPath() {
+		return postMrInputPath;
+	}
+
+	public void setPostMrInputPath(String postMrInputPath) {
+		this.postMrInputPath = postMrInputPath;
+	}
+
+	public String getPostMrOutputPath() {
+		return postMrOutputPath;
+	}
+
+	public void setPostMrOutputPath(String postMrOutputPath) {
+		this.postMrOutputPath = postMrOutputPath;
+	}
+
+	public String getPostSchedule() {
+		return postSchedule;
+	}
+
+	public void setPostSchedule(String postSchedule) {
+		this.postSchedule = postSchedule;
+	}
+
+	public String getDedupMrInputPath() {
+		return dedupMrInputPath;
+	}
+
+	public void setDedupMrInputPath(String dedupMrInputPath) {
+		this.dedupMrInputPath = dedupMrInputPath;
+	}
+
+	public String getDedupMrOutputPath() {
+		return dedupMrOutputPath;
+	}
+
+	public void setDedupMrOutputPath(String dedupMrOutputPath) {
+		this.dedupMrOutputPath = dedupMrOutputPath;
+	}
+
 	@Override
 	public String toString() {
-		return "Change RollingConfig [rawPath=" + rawPath
+		return "RollingConfig [rawPath=" + rawPath + ", postMrResultPath="
+				+ postMrResultPath + ", postMrInputPath=" + postMrInputPath
+				+ ", postMrOutputPath=" + postMrOutputPath
 				+ ", hourlyMrResultPath=" + hourlyMrResultPath
 				+ ", hourlyMrInputPath=" + hourlyMrInputPath
 				+ ", hourlyMrOutputPath=" + hourlyMrOutputPath
@@ -142,8 +211,13 @@ public class RollingConfig {
 				+ ", dailyMrInputPath=" + dailyMrInputPath
 				+ ", dailyMrOutputPath=" + dailyMrOutputPath + ", retryCount="
 				+ retryCount + ", retryDelaytime=" + retryDelaytime
-				+ ", notifyEmail=" + notifyEmail + ", hourlySchedule="
-				+ hourlySchedule + ", dailySchedule=" + dailySchedule + "]";
+				+ ", notifyEmail=" + notifyEmail + ", postSchedule="
+				+ postSchedule + ", hourlySchedule=" + hourlySchedule
+				+ ", dailySchedule=" + dailySchedule + ", dedupMrInputPath="
+				+ dedupMrInputPath + ", dedupMrOutputPath=" + dedupMrOutputPath
+				+ "]";
 	}
+
+	
 
 }
