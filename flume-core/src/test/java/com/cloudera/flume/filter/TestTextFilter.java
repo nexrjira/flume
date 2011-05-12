@@ -1,4 +1,4 @@
-package com.cloudera.flume.handlers.filter;
+package com.cloudera.flume.filter;
 
 import java.io.IOException;
 

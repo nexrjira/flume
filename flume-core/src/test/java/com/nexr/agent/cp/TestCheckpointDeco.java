@@ -3,17 +3,15 @@ package com.nexr.agent.cp;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import junit.framework.Assert;
 
 import org.junit.Test;
 
+import com.cloudera.flume.collector.MemorySink;
 import com.cloudera.flume.conf.LogicalNodeContext;
 import com.cloudera.flume.core.Event;
 import com.cloudera.flume.core.EventImpl;
-import com.cloudera.flume.reporter.aggregator.AccumulatorSink;
 import com.cloudera.util.Clock;
 
 public class TestCheckpointDeco {
@@ -91,21 +89,5 @@ public class TestCheckpointDeco {
 		//rotate // send close event 5
 		
 		Assert.assertEquals(5, snk.getCount());
-	}
-	
-	class MemorySink extends AccumulatorSink {
-		
-		List<Event> eventList = new ArrayList<Event>();
-
-		public MemorySink(String name) {
-			super(name);
-			// TODO Auto-generated constructor stub
-		}
-
-		@Override
-		public void append(Event e) throws IOException, InterruptedException {
-			eventList.add(e);
-			super.append(e);
-		}
 	}
 }
