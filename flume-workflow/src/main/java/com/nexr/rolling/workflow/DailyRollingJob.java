@@ -11,11 +11,11 @@ import com.nexr.framework.workflow.Step;
 import com.nexr.framework.workflow.StepContext;
 import com.nexr.framework.workflow.Steps;
 import com.nexr.framework.workflow.listener.StepExecutionListener;
-import com.nexr.rolling.workflow.daily.CleanUpTasklet;
-import com.nexr.rolling.workflow.daily.FinishingTasklet;
-import com.nexr.rolling.workflow.daily.InitTasklet;
-import com.nexr.rolling.workflow.daily.PrepareTasklet;
-import com.nexr.rolling.workflow.daily.RunDailyTasklet;
+//import com.nexr.rolling.workflow.daily.CleanUpTasklet;
+//import com.nexr.rolling.workflow.daily.FinishingTasklet;
+//import com.nexr.rolling.workflow.daily.InitTasklet;
+//import com.nexr.rolling.workflow.daily.PrepareTasklet;
+//import com.nexr.rolling.workflow.daily.RunDailyTasklet;
 
 /**
  * @author dani.kim@nexr.com
@@ -26,11 +26,11 @@ public class DailyRollingJob extends SimpleJob {
 	private final static Steps steps = new Steps();
 	
 	static {
-		steps.add(new Step("init", InitTasklet.class));
-		steps.add(new Step("prepare", PrepareTasklet.class));
-		steps.add(new Step("run", RunDailyTasklet.class));
-		steps.add(new Step("finishing", FinishingTasklet.class));
-		steps.add(new Step("cleanUp", CleanUpTasklet.class));
+//		steps.add(new Step("init", InitTasklet.class));
+//		steps.add(new Step("prepare", PrepareTasklet.class));
+//		steps.add(new Step("run", RunDailyTasklet.class));
+//		steps.add(new Step("finishing", FinishingTasklet.class));
+//		steps.add(new Step("cleanUp", CleanUpTasklet.class));
 	}
 
 	public DailyRollingJob() {

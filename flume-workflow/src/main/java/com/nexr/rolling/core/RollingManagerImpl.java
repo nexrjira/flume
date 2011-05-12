@@ -250,6 +250,15 @@ public class RollingManagerImpl implements Daemon, RollingManager,
 			} else if (value.startsWith(RollingConfig.DEDUP_MR_OUTPUT_PATH)) {
 				rollingConfig.setDedupMrOutputPath(value.substring(
 						value.indexOf("=")+1, value.length()).trim());
+			} else if (value.startsWith(RollingConfig.DEDUP_POST_PATH)) {
+				rollingConfig.setDedupPostPath(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
+			} else if (value.startsWith(RollingConfig.DEDUP_HOURLY_PATH)) {
+				rollingConfig.setDedupHourlyPath(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
+			} else if (value.startsWith(RollingConfig.DEDUP_DAILY_PATH)) {
+				rollingConfig.setDedupDailyPath(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
 			}
 		}
 	}
