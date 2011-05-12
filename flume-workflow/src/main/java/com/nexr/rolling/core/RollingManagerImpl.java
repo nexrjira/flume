@@ -40,6 +40,10 @@ public class RollingManagerImpl implements Daemon, RollingManager,
 	private String rollingMemberPath = null;
 	private String rollingMasterPath = null;
 	
+	private String dedupPostPath = null;
+	private String dedupHourlyPath = null;
+	private String dedupDailyPath = null;
+	
 	@Override
 	public void init(DaemonContext arg0) throws DaemonInitException, Exception {
 		// TODO Auto-generated method stub
@@ -48,6 +52,10 @@ public class RollingManagerImpl implements Daemon, RollingManager,
 		rollingConfigPath = conf.getRollingRootPath() + conf.getRollingConfigPath();
 		rollingMemberPath = conf.getRollingRootPath() + conf.getRollingMemberPath();
 		rollingMasterPath = conf.getRollingRootPath() + conf.getRollingMasterPath();
+		
+		dedupPostPath = conf.getDedupRootPath() + conf.getDedupPostPath();
+		dedupHourlyPath = conf.getDedupRootPath() + conf.getDedupHourlyPath();
+		dedupDailyPath = conf.getDedupRootPath() + conf.getDedupDailyPath();
 		
 		
 		hostName = getLocalhostName();
@@ -191,6 +199,15 @@ public class RollingManagerImpl implements Daemon, RollingManager,
 			if (value.startsWith(RollingConfig.RAW_PATH)) {
 				rollingConfig.setRawPath(value.substring(value.indexOf("=")+1,
 						value.length()).trim());
+			} else if (value.startsWith(RollingConfig.POST_MR_INPUT_PATH)) {
+				rollingConfig.setPostMrInputPath(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
+			} else if (value.startsWith(RollingConfig.POST_MR_OUTPUT_PATH)) {
+				rollingConfig.setPostMrOutputPath(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
+			} else if (value.startsWith(RollingConfig.POST_MR_RESULT_PATH)) {
+				rollingConfig.setPostMrResultPath(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
 			} else if (value.startsWith(RollingConfig.HOURLY_MR_INPUT_PATH)) {
 				rollingConfig.setHourlyMrInputPath(value.substring(
 						value.indexOf("=")+1, value.length()).trim());
@@ -218,11 +235,20 @@ public class RollingManagerImpl implements Daemon, RollingManager,
 			} else if (value.startsWith(RollingConfig.NOTIFY_EMAIL)) {
 				rollingConfig.setNotifyEmail(value.substring(
 						value.indexOf("=")+1, value.length()).trim());
+			} else if (value.startsWith(RollingConfig.POST_SCHEDULE)) {
+				rollingConfig.setPostSchedule(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
 			} else if (value.startsWith(RollingConfig.HOURLY_SCHEDULE)) {
 				rollingConfig.setHourlySchedule(value.substring(
 						value.indexOf("=")+1, value.length()).trim());
 			} else if (value.startsWith(RollingConfig.DAILY_SCHEDULE)) {
 				rollingConfig.setDailySchedule(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
+			} else if (value.startsWith(RollingConfig.DEDUP_MR_INPUT_PATH)) {
+				rollingConfig.setDedupMrInputPath(value.substring(
+						value.indexOf("=")+1, value.length()).trim());
+			} else if (value.startsWith(RollingConfig.DEDUP_MR_OUTPUT_PATH)) {
+				rollingConfig.setDedupMrOutputPath(value.substring(
 						value.indexOf("=")+1, value.length()).trim());
 			}
 		}
