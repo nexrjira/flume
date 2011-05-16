@@ -1,7 +1,9 @@
 package com.nexr.rolling.core;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -68,6 +70,66 @@ public class RollingManagerImpl implements Daemon, RollingManager,
 		
 		zkClient.subscribeChildChanges(rollingMemberPath, this);
 		zkClient.subscribeChildChanges(rollingMasterPath, this);
+		
+		if(!zkClient.exists(conf.getDedupRootPath())){
+			zkClient.createPersistent(conf.getDedupRootPath());
+			zkClient.createPersistent(dedupPostPath);
+			zkClient.createPersistent(dedupHourlyPath);
+			zkClient.createPersistent(dedupDailyPath);
+		}
+		
+		//dedup
+		zkClient.subscribeChildChanges(dedupPostPath, new IZkChildListener() {
+			@Override
+			public void handleChildChange(String parentPath, List<String> currentChilds)
+					throws Exception {
+				// TODO Auto-generated method stub
+				log.info("Post Mr Result is Duplicacted");
+								
+				log.info("Dedup List");
+				for(String dedup : currentChilds){
+					dedup = dedup.replace(":", "/");
+					log.info(dedup);
+				}
+				
+				PostDedupJob postDedupJob;
+				for(String dedup : currentChilds){
+					postDedupJob = new PostDedupJob(dedup);
+					postDedupJob.initDedupMr();
+					postDedupJob.movePostDedupMrData();
+					postDedupJob.runPostDedupMr();
+				}
+			}
+		});
+		
+		zkClient.subscribeChildChanges(dedupHourlyPath, new IZkChildListener() {
+			@Override
+			public void handleChildChange(String parentPath, List<String> currentChilds)
+					throws Exception {
+				// TODO Auto-generated method stub
+				log.info("Hourly Mr Result is Duplicacted");
+				log.info("Dedup List");
+				for(String dedup : currentChilds){
+					dedup = dedup.replace(":", "/");
+					log.info(dedup);
+				}	
+			}
+		});
+		
+		
+		zkClient.subscribeChildChanges(dedupDailyPath, new IZkChildListener() {
+			@Override
+			public void handleChildChange(String parentPath, List<String> currentChilds)
+					throws Exception {
+				// TODO Auto-generated method stub
+				log.info("Daily Mr Result is Duplicacted");
+				log.info("Dedup List");
+				for(String dedup : currentChilds){
+					dedup = dedup.replace(":", "/");
+					log.info(dedup);
+				}	
+			}
+		});
 		
 		try {
 			zkClient.getEventLock().lock();
