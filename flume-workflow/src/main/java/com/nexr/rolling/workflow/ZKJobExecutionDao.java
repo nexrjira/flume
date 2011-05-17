@@ -28,7 +28,6 @@ import org.springframework.batch.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.batch.retry.listener.RetryListenerSupport;
 import org.springframework.batch.retry.policy.SimpleRetryPolicy;
 import org.springframework.batch.retry.support.RetryTemplate;
-import org.springframework.stereotype.Repository;
 
 import com.nexr.framework.workflow.Job;
 import com.nexr.framework.workflow.JobExecution;
@@ -45,10 +44,10 @@ import com.nexr.framework.workflow.Workflow;
 /**
  * @author dani.kim@nexr.com
  */
-@Repository
 public class ZKJobExecutionDao implements JobExecutionDao {
 	private static final String COMPLETE = "/rolling/jobs/complete";
 	private static final String RUNNING = "/rolling/jobs/running";
+	private static final String OUTAGE = "/rolling/jobs/outage";
 
 	private Logger LOG = LoggerFactory.getLogger(ZKJobExecutionDao.class);
 	
@@ -63,6 +62,9 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 				}
 				if (!client.exists(COMPLETE)) {
 					client.createPersistent(COMPLETE, true);
+				}
+				if (!client.exists(OUTAGE)) {
+					client.createPersistent(OUTAGE, true);
 				}
 			} else {
 				throwable.printStackTrace();
@@ -79,11 +81,43 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 		retryTemplate.setRetryPolicy(new SimpleRetryPolicy(10, retryableExceptions));
 		retryTemplate.setListeners(new RetryListener[] { retryListener });
 	}
-
+	
+	@Override
+	public JobExecution findLastFailExecution() {
+		List<JobExecution> executions = findFailExecutions();
+		if (executions.size() > 0) {
+			return executions.get(executions.size() - 1);
+		}
+		return null;
+	}
+	
+	@Override
+	public List<JobExecution> findFailExecutions() {
+		List<JobExecution> executions = new ArrayList<JobExecution>();
+		List<String> children = client.getChildren(RUNNING);
+		for (String child : children) {
+			Object data = client.readData(String.format("%s/%s", RUNNING, child));
+			try {
+				if (data != null) {
+					JobExecution execution = readJobExecution(data.toString());
+					if (execution.getStatus() == JobStatus.COMPLETED) {
+					} else if (execution.getStatus() == JobStatus.FAILED) {
+						executions.add(execution);
+					} else if (!client.exists(String.format("%s/%s", OUTAGE, execution.getKey()))) {
+						executions.add(execution);
+					}
+				}
+			} catch (Exception e) {
+				LOG.warn("Invalid format : " + data, e);
+				client.delete(String.format("%s/%s", RUNNING, child));
+			}
+		}
+		return executions;
+	}
+	
 	@Override
 	public JobExecution saveJobExecution(Job job) {
 		String key = createJobKey(job.getName(), job.getParameters());
-		
 		StepContext context = new StepContext();
 		context.setConfig(new Config(job.getParameters()));
 		
@@ -118,11 +152,16 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 		for (String key : execution.getContext().getConfig().keys()) {
 			parameters.put(key, execution.getContext().getConfig().get(key, null));
 		}
+		ObjectNode context = root.putObject("context");
+		for (String key : execution.getContext().keys()) {
+			context.put(key, execution.getContext().get(key, null));
+		}
 		ObjectNode node = root.putObject("workflow");
 		Workflow workflow = execution.getWorkflow();
-		ArrayNode steps = node.putArray("steps");
-		for (Step step : workflow.getSteps()) {
-			steps.add(step.getName());
+		node.put("steps", writeSteps(workflow.getSteps()));
+		node.put("footprints", writeSteps(workflow.getFootprints()));
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("text: {}", node.toString());
 		}
 		return root.toString();
 	}
@@ -133,6 +172,12 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 			retryTemplate.execute(new RetryCallback<String>() {
 				@Override
 				public String doWithRetry(RetryContext context) throws Exception {
+					if (execution.getStatus() != null && execution.getStatus() == JobStatus.STARTED) {
+						String outageNode = String.format("%s/%s", OUTAGE, execution.getKey());
+						if (!client.exists(outageNode)) {
+							client.createEphemeral(outageNode);
+						}
+					}
 					client.writeData(createZNodePath(execution), createJobExecution(execution));
 					return null;
 				}
@@ -144,21 +189,31 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 	}
 	
 	@Override
+	public JobExecution completeJob(JobExecution execution) {
+		execution.setStatus(JobStatus.COMPLETED);
+		updateJobExecution(execution);
+		removeJob(execution.getJob());
+		return execution;
+	}
+	
+	@Override
+	public List<JobExecution> clearFailExecutions() {
+		List<JobExecution> executions = findFailExecutions();
+		for (JobExecution execution : executions) {
+			removeJob(execution.getJob());
+		}
+		return executions;
+	}
+	
+	@Override
 	public StepExecution updateStepExecution(final JobExecution execution, final Step step) {
 		try {
 			return retryTemplate.execute(new RetryCallback<StepExecution>() {
 				@Override
 				public StepExecution doWithRetry(RetryContext context) throws Exception {
-					String parent = createZNodePath(execution);
-					ObjectNode node = new ObjectNode(new ObjectMapper().getNodeFactory());
-					node.put("timestamp", System.currentTimeMillis());
-					node.put("name", step.getName());
-					if (step.getTasklet() != null) {
-						node.put("tasklet", step.getTasklet().getName());
-					}
-					String json = node.toString();
-					LOG.debug("Update step execution ", new Object[] { execution.getKey(), step.getName(), json });
-					client.createPersistentSequential(String.format("%s/step-", parent), json);
+//					String parent = createZNodePath(execution);
+//					client.createPersistentSequential(String.format("%s/step-", parent), writeStep(step));
+					updateJobExecution(execution);
 					StepExecution stepExecution = new StepExecution();
 					return stepExecution;
 				}
@@ -182,49 +237,28 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			final ObjectNode root = (ObjectNode) mapper.readTree(data);
-			Job job = new Job() {
-				@Override
-				public String getName() {
-					return root.path("name").getValueAsText();
-				}
-				
-				@Override
-				public boolean isRecoverable() {
-					return root.path("recovery").getBooleanValue();
-				}
-				
-				@Override
-				public Map<String, String> getParameters() {
-					return null;
-				}
-				
-				@Override
-				public Steps getSteps() {
-					return null;
-				}
-				
-				@Override
-				public void addParameter(String name, String value) {
-				}
-				
-				@Override
-				public void execute(JobExecution execution) {
-				}
-			};
+
 			ObjectNode paramNodes = (ObjectNode) root.path("parameters");
+			String jobClassName = paramNodes.path("job.class").getTextValue();
+			
+			Job job = (Job) Class.forName(jobClassName).newInstance();
+			job.setName(root.path("name").getValueAsText());
+			job.setSteps(readSteps(root.path("workflow").path("steps")));
+			job.setRecoverable(root.path("recovery").getBooleanValue());
+			
 			Iterator<String> names = paramNodes.getFieldNames();
-			Map<String, String> parameters = new HashMap<String, String>();
 			for (String name = null; names.hasNext(); ) {
 				name = names.next();
-				parameters.put(name, paramNodes.path(name).getTextValue());
+				job.addParameter(name, paramNodes.path(name).getTextValue());
 			}
+			
 			JobExecution execution = new JobExecution();
 			execution.setKey(root.path("key").getTextValue());
 			execution.setJob(job);
 			execution.setStatus(JobStatus.valueOf(root.path("status").getTextValue()));
-			execution.setWorkflow(new Workflow(readSteps(root.path("workflow").path("steps")), readFootprints(execution.getKey())));
+			execution.setWorkflow(new Workflow(job.getSteps(), readSteps(root.path("workflow").path("footprints"))));
 			StepContext context = new StepContext();
-			context.setConfig(new Config(parameters));
+			context.setConfig(new Config(job.getParameters()));
 			execution.setContext(context);
 			return execution;
 		} catch (Exception e) {
@@ -233,6 +267,7 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 		return null;
 	}
 	
+	@SuppressWarnings("unused")
 	private Steps readFootprints(String key) throws IOException {
 		Steps steps = new Steps();
 		String path = String.format("%s/%s", RUNNING, key);
@@ -270,7 +305,7 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 			String name = object.path("name").getTextValue();
 			String tasklet = object.path("tasklet").getTextValue();
 			try {
-				return new Step(name, (Class<? extends Tasklet>) Class.forName(tasklet));
+				return new Step(name, tasklet == null ? null : (Class<? extends Tasklet>) Class.forName(tasklet));
 			} catch (Exception e) {
 				throw new IllegalStateException("Tasklet is illegal state.", e);
 			}
@@ -279,6 +314,24 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 		}
 		throw new IllegalStateException("Unsupported json format. \"" + node.toString() + "\"");
 	}
+	
+	private JsonNode writeSteps(Steps steps) {
+		ArrayNode nodes = new ArrayNode(new ObjectMapper().getNodeFactory());
+		for (Step step : steps) {
+			nodes.add(writeStep(step));
+		}
+		return nodes;
+	}
+	
+	private JsonNode writeStep(Step step) {
+		ObjectNode node = new ObjectNode(new ObjectMapper().getNodeFactory());
+		node.put("timestamp", System.currentTimeMillis());
+		node.put("name", step.getName());
+		if (step.getTasklet() != null) {
+			node.put("tasklet", step.getTasklet().getName());
+		}
+		return node;
+	}
 
 	public void removeJob(Job job) {
 		final String key = createJobKey(job.getName(), job.getParameters());
@@ -286,11 +339,15 @@ public class ZKJobExecutionDao implements JobExecutionDao {
 			String backup = retryTemplate.execute(new RetryCallback<String>() {
 				@Override
 				public String doWithRetry(RetryContext context) throws Exception {
+					if (!client.exists(createZNodePath(key))) {
+						return null;
+					}
 					Object data = client.readData(createZNodePath(key));
 					String backup = String.format("%s/%s", COMPLETE, key);
 					if (!client.exists(backup)) {
 						client.delete(backup);
 					}
+					client.delete(String.format("%s/%s", OUTAGE, key));
 					client.createPersistent(backup, data);
 					client.delete(createZNodePath(key));
 					return backup;

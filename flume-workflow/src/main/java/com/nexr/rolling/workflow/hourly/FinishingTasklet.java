@@ -9,14 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nexr.framework.workflow.StepContext;
-import com.nexr.rolling.workflow.DFSTasklet;
+import com.nexr.rolling.workflow.RetryableDFSTaskletSupport;
 import com.nexr.rolling.workflow.RollingConstants;
 
 /**
  * @author dani.kim@nexr.com
  */
 @Deprecated
-public class FinishingTasklet extends DFSTasklet {
+public class FinishingTasklet extends RetryableDFSTaskletSupport {
 	private Logger LOG = LoggerFactory.getLogger(getClass());
 	
 	final public static PathFilter SEQ_FILE_FILTER = new PathFilter() {

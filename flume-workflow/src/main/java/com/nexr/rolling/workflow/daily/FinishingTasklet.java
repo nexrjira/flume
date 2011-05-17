@@ -1,4 +1,4 @@
-package com.nexr.rolling.workflow;
+package com.nexr.rolling.workflow.daily;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,13 +10,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nexr.framework.workflow.StepContext;
-import com.nexr.rolling.workflow.DFSTasklet;
+import com.nexr.rolling.workflow.RetryableDFSTaskletSupport;
 import com.nexr.rolling.workflow.RollingConstants;
 
 /**
  * @author dani.kim@nexr.com
  */
-public class FinishingTasklet extends DFSTasklet {
+@Deprecated
+public class FinishingTasklet extends RetryableDFSTaskletSupport {
 	private Logger LOG = LoggerFactory.getLogger(getClass());
 
 	final public static PathFilter SEQ_FILE_FILTER = new PathFilter() {
@@ -28,8 +29,8 @@ public class FinishingTasklet extends DFSTasklet {
 	@SuppressWarnings("unused")
 	@Override
 	public String run(StepContext context) {
-		String output = context.getConfig().get(RollingConstants.OUTPUT_PATH, null);
-		String result = context.getConfig().get(RollingConstants.RESULT_PATH, null);
+		String output = context.getConfig().get(RollingConstants.DAILY_MR_OUTPUT_PATH, null);
+		String result = context.getConfig().get(RollingConstants.DAILY_MR_RESULT_PATH, null);
 
 		Path sourcePath = new Path(output);
 		FileStatus[] dataType = null;

@@ -1,4 +1,4 @@
-package com.nexr.rolling.workflow;
+package com.nexr.rolling.workflow.daily;
 
 import java.io.IOException;
 
@@ -6,22 +6,19 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nexr.rolling.workflow.DFSTasklet;
+import com.nexr.rolling.workflow.RetryableDFSTaskletSupport;
 import com.nexr.rolling.workflow.RollingConstants;
 
 /**
  * @author dani.kim@nexr.com
  */
-public class InitTasklet extends DFSTasklet {
+@Deprecated
+public class InitTasklet extends RetryableDFSTaskletSupport {
 	private Logger LOG = LoggerFactory.getLogger(getClass());
 	
-	public InitTasklet() {
-		super();
-	}
-	
 	public String run(com.nexr.framework.workflow.StepContext context) {
-		Path input = new Path(context.getConfig().get(RollingConstants.INPUT_PATH, null));
-		Path output = new Path(context.getConfig().get(RollingConstants.OUTPUT_PATH, null));
+		Path input = new Path(context.getConfig().get(RollingConstants.DAILY_MR_INPUT_PATH, null));
+		Path output = new Path(context.getConfig().get(RollingConstants.DAILY_MR_OUTPUT_PATH, null));
 		try {
 			if (!fs.exists(input)) {
 				fs.mkdirs(input);
@@ -32,7 +29,7 @@ public class InitTasklet extends DFSTasklet {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		LOG.info("Rolling Job Success Initialization : Input: " + input.getName());
+		LOG.info("Success Initialization : Create " + input.getName());
 		return "prepare";
 	}
 }
