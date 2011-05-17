@@ -17,7 +17,7 @@ public class DailyTask extends QuartzJobBean {
 		RollingConfig config = (RollingConfig) context.getJobDetail()
 				.getJobDataMap().get("config");
 
-		log.info("DailyRolling Job Start");
+		log.info("DailyRolling Job Start~~");
 	}
 
 }
